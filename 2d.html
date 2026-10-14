@@ -227,10 +227,18 @@
                 <button class="stage-btn active" data-stage="4" title="Stage 4: Complete Film with Audio & Polish">4 ·
                     Full Film</button>
             </div>
-            <button id="audio-btn" class="ctrl-btn" type="button" aria-label="Toggle Sound">
-                <span id="audio-icon">🔇</span>
-                <span id="audio-label">Tap for Sound</span>
-            </button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button id="azan-btn" class="ctrl-btn" type="button"
+                    title="Hear the distant unamplified village Azan across the fields"
+                    style="background:rgba(16,14,11,0.58); border:1px solid rgba(244,235,217,0.2); padding:6px 12px; display:flex; align-items:center; gap:6px; font-size:12px; color:#f4ebd9; backdrop-filter:blur(6px);">
+                    <span>🕌</span>
+                    <span id="azan-label">Distant Azan</span>
+                </button>
+                <button id="audio-btn" class="ctrl-btn playing" type="button" aria-label="Toggle Sound">
+                    <span id="audio-icon">🔊</span>
+                    <span id="audio-label">Sound Active · Tap Village</span>
+                </button>
+            </div>
         </div>
 
         <div id="bottom-bar" class="hud hud-fade">
@@ -666,6 +674,36 @@
                     hctx.lineTo(WORLD_W, 240);
                     hctx.closePath();
                     hctx.fill();
+                    if (layer === 1) {
+                        // Distant lime-washed 1990s village mosque across the river (no loudspeaker horn, pure human Azan)
+                        const mx = 468, my = 204;
+                        hctx.fillStyle = '#d8d0c1';
+                        hctx.fillRect(mx - 24, my, 48, 22);
+                        // Three traditional Mughal-style domes
+                        hctx.beginPath();
+                        hctx.arc(mx - 14, my, 7.5, Math.PI, 0);
+                        hctx.arc(mx, my - 2, 10.5, Math.PI, 0);
+                        hctx.arc(mx + 14, my, 7.5, Math.PI, 0);
+                        hctx.fill();
+                        // Corner slender minars (turrets) & finials
+                        hctx.fillRect(mx - 26, my - 12, 3.5, 34);
+                        hctx.fillRect(mx + 22.5, my - 12, 3.5, 34);
+                        hctx.strokeStyle = '#b8ad9a';
+                        hctx.lineWidth = 1;
+                        hctx.beginPath();
+                        hctx.moveTo(mx, my - 12.5);
+                        hctx.lineTo(mx, my - 17);
+                        hctx.stroke();
+                        // Arched doorways
+                        hctx.fillStyle = '#24382d';
+                        [-13, 0, 13].forEach(dx => {
+                            hctx.beginPath();
+                            hctx.arc(mx + dx, my + 12, 3.2, Math.PI, 0);
+                            hctx.lineTo(mx + dx + 3.2, my + 22);
+                            hctx.lineTo(mx + dx - 3.2, my + 22);
+                            hctx.fill();
+                        });
+                    }
 
                     for (let i = 0; i < 34; i++) {
                         const px = hRng() * WORLD_W;
@@ -3526,19 +3564,61 @@
             }
 
             // ============================================================================
-            // 9. STAGE 4: PROCEDURAL WEB AUDIO SYNTHESIZER (OFF UNTIL FIRST TAP)
+            // 9. INTERACTIVE VILLAGE AUDIO ENGINE & UNAMPLIFIED VOCAL AZAN SYNTHESIZER
             // ============================================================================
             let audioCtx = null;
-            let isMuted = true;
+            let isMuted = false; // Interactive from the very beginning!
             let masterGain = null;
+            let openAirReverb = null;
+            let reverbSend = null;
+
+            // Continuous environmental channels
             let windGain = null;
             let windFilter = null;
+            let leavesGain = null;
             let rainGain = null;
+            let tinRoofGain = null;
+            let stoveCrackleGain = null;
             let padGain = null;
-            let nextBirdTime = 0;
+
+            // Scheduled & interactive state
+            let nextBirdTime = 0.6;
+            let nextRoosterTime = 2.2;
+            let nextOarTime = 1.5;
+            let nextFluteTime = 3.5;
             let nextCricketTime = 0;
             let nextDripTime = 0;
             let lastThunderTrigger = -10;
+            let azanActiveUntil = 0;
+            let lastAutoAzanWindow = -1;
+
+            // Visual feedback ripples when user taps interactive objects or when Azan floats from mosque
+            const soundRipples = [];
+            let tubewellPumpAnim = 0;
+
+            function spawnSoundRipple(x, y, label, color = 'rgba(255, 236, 185, 0.85)') {
+                soundRipples.push({ x, y, r: 4, maxR: 58, alpha: 1.0, label, color });
+            }
+
+            // Create a stereo Open-Air Village Impulse Response (paddy fields, distant trees & river water reflection)
+            function createOpenAirImpulse(ac) {
+                const duration = 2.6;
+                const len = Math.floor(ac.sampleRate * duration);
+                const buf = ac.createBuffer(2, len, ac.sampleRate);
+                for (let ch = 0; ch < 2; ch++) {
+                    const d = buf.getChannelData(ch);
+                    let lp = 0;
+                    for (let i = 0; i < len; i++) {
+                        const t = i / ac.sampleRate;
+                        // Soft pre-delay + smooth natural open-field decay (no metallic room reflections)
+                        const env = Math.pow(1 - t / duration, 2.4) * Math.sin(Math.min(1, t * 18) * Math.PI * 0.5);
+                        const white = Math.random() * 2 - 1;
+                        lp = 0.88 * lp + 0.12 * white; // warm air absorption damping high frequencies
+                        d[i] = lp * env * 0.38;
+                    }
+                }
+                return buf;
+            }
 
             function initAudioEngine() {
                 if (audioCtx) return;
@@ -3547,10 +3627,19 @@
                 audioCtx = new AC();
 
                 masterGain = audioCtx.createGain();
-                masterGain.gain.value = 0.01;
+                masterGain.gain.value = isMuted ? 0.0001 : 0.90;
                 masterGain.connect(audioCtx.destination);
 
-                const bufLen = audioCtx.sampleRate * 3;
+                // Open-air village field convolution reverb for distant Azan, birds, and bamboo flute
+                openAirReverb = audioCtx.createConvolver();
+                openAirReverb.buffer = createOpenAirImpulse(audioCtx);
+                reverbSend = audioCtx.createGain();
+                reverbSend.gain.value = 0.55;
+                reverbSend.connect(openAirReverb);
+                openAirReverb.connect(masterGain);
+
+                // 4-second organic pink/brown noise buffer
+                const bufLen = audioCtx.sampleRate * 4;
                 const noiseBuf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
                 const data = noiseBuf.getChannelData(0);
                 let b0 = 0, b1 = 0, b2 = 0;
@@ -3559,66 +3648,411 @@
                     b0 = 0.997 * b0 + white * 0.029;
                     b1 = 0.985 * b1 + white * 0.032;
                     b2 = 0.950 * b2 + white * 0.048;
-                    data[i] = (b0 + b1 + b2 + white * 0.12) * 0.35;
+                    data[i] = (b0 + b1 + b2 + white * 0.10) * 0.35;
                 }
 
-                const windSrc = audioCtx.createBufferSource();
-                windSrc.buffer = noiseBuf;
-                windSrc.loop = true;
+                function makeLoopSource() {
+                    const s = audioCtx.createBufferSource();
+                    s.buffer = noiseBuf;
+                    s.loop = true;
+                    s.start();
+                    return s;
+                }
+
+                // 1. Warm Village Wind across paddy fields
+                const windSrc = makeLoopSource();
                 windFilter = audioCtx.createBiquadFilter();
                 windFilter.type = 'bandpass';
-                windFilter.frequency.value = 260;
-                windFilter.Q.value = 2.4;
+                windFilter.frequency.value = 240;
+                windFilter.Q.value = 2.0;
                 windGain = audioCtx.createGain();
-                windGain.gain.value = 0.04;
+                windGain.gain.value = 0.035;
                 windSrc.connect(windFilter).connect(windGain).connect(masterGain);
-                windSrc.start();
 
-                const rainSrc = audioCtx.createBufferSource();
-                rainSrc.buffer = noiseBuf;
-                rainSrc.loop = true;
+                // 2. Rustling Palm & Bamboo Leaves (higher, softer airy rustle)
+                const leavesSrc = makeLoopSource();
+                const leavesFilter = audioCtx.createBiquadFilter();
+                leavesFilter.type = 'bandpass';
+                leavesFilter.frequency.value = 920;
+                leavesFilter.Q.value = 1.4;
+                leavesGain = audioCtx.createGain();
+                leavesGain.gain.value = 0.015;
+                leavesSrc.connect(leavesFilter).connect(leavesGain).connect(masterGain);
+
+                // 3. Silky Monsoon Rain + Warm Corrugated Tin-Roof Patter
+                const rainSrc = makeLoopSource();
                 const rainFilter = audioCtx.createBiquadFilter();
                 rainFilter.type = 'bandpass';
-                rainFilter.frequency.value = 1350;
-                rainFilter.Q.value = 0.7;
+                rainFilter.frequency.value = 1280;
+                rainFilter.Q.value = 0.65;
                 rainGain = audioCtx.createGain();
                 rainGain.gain.value = 0.0;
                 rainSrc.connect(rainFilter).connect(rainGain).connect(masterGain);
-                rainSrc.start();
 
+                const tinSrc = makeLoopSource();
+                const tinFilter = audioCtx.createBiquadFilter();
+                tinFilter.type = 'bandpass';
+                tinFilter.frequency.value = 480;
+                tinFilter.Q.value = 2.2;
+                tinRoofGain = audioCtx.createGain();
+                tinRoofGain.gain.value = 0.0;
+                tinSrc.connect(tinFilter).connect(tinRoofGain).connect(masterGain);
+
+                // 4. Morning Clay Stove Woodfire Soft Crackle
+                const stoveSrc = makeLoopSource();
+                const stoveFilter = audioCtx.createBiquadFilter();
+                stoveFilter.type = 'highpass';
+                stoveFilter.frequency.value = 1800;
+                stoveCrackleGain = audioCtx.createGain();
+                stoveCrackleGain.gain.value = 0.008;
+                stoveSrc.connect(stoveFilter).connect(stoveCrackleGain).connect(masterGain);
+
+                // 5. Gentle Warm Village Atmosphere Bed (very subtle tanpura-like root & fifth: D3 + A3)
                 padGain = audioCtx.createGain();
-                padGain.gain.value = 0.065;
+                padGain.gain.value = 0.028;
                 const padFilter = audioCtx.createBiquadFilter();
                 padFilter.type = 'lowpass';
-                padFilter.frequency.value = 480;
+                padFilter.frequency.value = 340;
                 padFilter.connect(padGain).connect(masterGain);
 
-                [146.83, 220.0, 293.66, 369.99].forEach((freq, idx) => {
+                [146.83, 220.0].forEach((freq, idx) => {
                     const osc = audioCtx.createOscillator();
                     const oGain = audioCtx.createGain();
-                    osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+                    osc.type = idx === 0 ? 'sine' : 'triangle';
                     osc.frequency.value = freq;
-                    oGain.gain.value = idx === 3 ? 0.12 : 0.25;
+                    oGain.gain.value = idx === 0 ? 0.25 : 0.16;
                     osc.connect(oGain).connect(padFilter);
                     osc.start();
                 });
             }
 
-            function triggerBirdCall(now) {
+            // --------------------------------------------------------------------------
+            // UNAMPLIFIED HUMAN-VOICE AZAN SYNTHESIZER (No Microphone / No Horn PA)
+            // Uses Glottal Harmonic Series + 3 Parallel Vowel Formant Filters (F1,F2,F3)
+            // + Natural Vibrato + Open-Air Distance Filtering & Field Reverb
+            // --------------------------------------------------------------------------
+            function triggerUnamplifiedAzan(startOffset = 0) {
+                if (!audioCtx || isMuted) return;
+                const now = audioCtx.currentTime + startOffset;
+                if (now < azanActiveUntil - 1.0) return; // already calling Azan
+
+                // Create a rich periodic glottal vocal wave (warm human vocal cords, no harsh clipping)
+                const real = new Float32Array(24);
+                const imag = new Float32Array(24);
+                for (let k = 1; k < 24; k++) {
+                    // Natural human glottal roll-off (-12dB/octave) so voice is warm and chesty
+                    imag[k] = 1.0 / Math.pow(k, 1.38);
+                }
+                const vocalWave = audioCtx.createPeriodicWave(real, imag);
+
+                // Vowel Formant Table [F1, F2, F3] for natural Arabic vocal articulation
+                const VOWELS = {
+                    A: [730, 1190, 2440], // open warm "Allā..."
+                    O: [540, 920, 2350],  // deep rounded "Allāhu..."
+                    U: [350, 780, 2250],  // "-hu"
+                    E: [490, 1720, 2420], // "Ash-ha-du..."
+                    I: [320, 2120, 2700], // "-i-lā-ha / il-lā..."
+                    M: [280, 900, 2150]   // soft nasal/liquid closure "l / m / n"
+                };
+
+                // Authentic, slow, contemplative Bengali village Maqam phrasing (root D3 = 146.83 Hz, Hijaz/Bhairav inflection):
+                // D3=146.8, Eb3=155.6, F#3=185.0, G3=196.0, A3=220.0, Bb3=233.1, C4=261.6
+                // Phrase 1 (0.0 - 6.8s): "Allāhu Akbar, Allāhu Akbar" (slow, rising, unhurried breath)
+                // Phrase 2 (7.6 - 15.2s): "Ash-hadu an lā ilāha illāllāh" (soulful melismatic descent across the fields)
+                const phrases = [
+                    {
+                        t0: 0.0, dur: 6.6,
+                        notes: [
+                            { t: 0.0, f: 196.0, v: 'A' }, // Al-
+                            { t: 0.5, f: 220.0, v: 'O' }, // lā-
+                            { t: 2.1, f: 233.1, v: 'O' }, // (melisma rise)
+                            { t: 2.8, f: 220.0, v: 'U' }, // -hu
+                            { t: 3.3, f: 196.0, v: 'A' }, // Ak-
+                            { t: 3.9, f: 220.0, v: 'A' }, // -ba-
+                            { t: 4.5, f: 185.0, v: 'O' }, // -a-
+                            { t: 5.3, f: 196.0, v: 'A' }, // -ar...
+                            { t: 6.4, f: 185.0, v: 'M' }
+                        ]
+                    },
+                    {
+                        t0: 7.4, dur: 7.4,
+                        notes: [
+                            { t: 0.0, f: 185.0, v: 'E' }, // Ash-ha-
+                            { t: 0.9, f: 220.0, v: 'U' }, // -du
+                            { t: 1.5, f: 233.1, v: 'A' }, // an lā
+                            { t: 2.6, f: 261.6, v: 'I' }, // i-
+                            { t: 3.2, f: 233.1, v: 'A' }, // -lā-ha
+                            { t: 4.4, f: 220.0, v: 'I' }, // il-
+                            { t: 5.0, f: 196.0, v: 'O' }, // -lāl-
+                            { t: 5.8, f: 185.0, v: 'A' }, // -lā-
+                            { t: 6.5, f: 146.8, v: 'A' }, // -āh... (gentle rest on tonic D3)
+                            { t: 7.2, f: 146.8, v: 'M' }
+                        ]
+                    }
+                ];
+
+                azanActiveUntil = now + 15.2;
+                const azanBtn = document.getElementById('azan-label');
+                if (azanBtn) {
+                    azanBtn.textContent = 'Azan Calling...';
+                    setTimeout(() => {
+                        if (azanBtn) azanBtn.textContent = 'Distant Azan';
+                    }, 15000);
+                }
+
+                for (const ph of phrases) {
+                    const pStart = now + ph.t0;
+                    const pEnd = pStart + ph.dur;
+
+                    const osc = audioCtx.createOscillator();
+                    osc.setPeriodicWave(vocalWave);
+
+                    // Natural human vocal vibrato (~5.1 Hz, gentle +-2.2 Hz depth)
+                    const vib = audioCtx.createOscillator();
+                    const vibGain = audioCtx.createGain();
+                    vib.frequency.value = 5.1;
+                    vibGain.gain.setValueAtTime(0.4, pStart);
+                    vibGain.gain.linearRampToValueAtTime(2.3, pStart + 1.4);
+                    vib.connect(vibGain).connect(osc.frequency);
+
+                    // 3 Parallel Formant Bandpass Filters (F1, F2, F3) for authentic human vowel throat resonance
+                    const f1 = audioCtx.createBiquadFilter();
+                    const f2 = audioCtx.createBiquadFilter();
+                    const f3 = audioCtx.createBiquadFilter();
+                    [f1, f2, f3].forEach((f, idx) => {
+                        f.type = 'bandpass';
+                        f.Q.value = idx === 0 ? 5.5 : idx === 1 ? 7.0 : 8.5;
+                    });
+                    const f1Gain = audioCtx.createGain(); f1Gain.gain.value = 1.0;
+                    const f2Gain = audioCtx.createGain(); f2Gain.gain.value = 0.52;
+                    const f3Gain = audioCtx.createGain(); f3Gain.gain.value = 0.22;
+
+                    // Schedule smooth pitch portamento & vowel formant morphing
+                    for (let i = 0; i < ph.notes.length; i++) {
+                        const n = ph.notes[i];
+                        const nt = pStart + n.t;
+                        const vw = VOWELS[n.v] || VOWELS.A;
+                        if (i === 0) {
+                            osc.frequency.setValueAtTime(n.f, nt);
+                            f1.frequency.setValueAtTime(vw[0], nt);
+                            f2.frequency.setValueAtTime(vw[1], nt);
+                            f3.frequency.setValueAtTime(vw[2], nt);
+                        } else {
+                            // Smooth human vocal glide
+                            osc.frequency.exponentialRampToValueAtTime(n.f, nt);
+                            f1.frequency.exponentialRampToValueAtTime(vw[0], nt);
+                            f2.frequency.exponentialRampToValueAtTime(vw[1], nt);
+                            f3.frequency.exponentialRampToValueAtTime(vw[2], nt);
+                        }
+                    }
+
+                    // Open-air distance low-pass filter (250m across misty fields absorbs harsh highs > 1750 Hz)
+                    const airFilter = audioCtx.createBiquadFilter();
+                    airFilter.type = 'lowpass';
+                    airFilter.frequency.value = 1720;
+
+                    // Subtle stereo panning (slightly left-of-center where the distant mosque sits across the river)
+                    const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+                    if (panner) panner.pan.value = -0.28;
+
+                    // Smooth human breath envelope (soft attack, expressive swell, gentle decay into open air)
+                    const env = audioCtx.createGain();
+                    env.gain.setValueAtTime(0.0001, pStart);
+                    env.gain.linearRampToValueAtTime(0.095, pStart + 0.85);
+                    env.gain.setValueAtTime(0.105, pEnd - 1.3);
+                    env.gain.exponentialRampToValueAtTime(0.0001, pEnd);
+
+                    osc.connect(f1); f1.connect(f1Gain); f1Gain.connect(airFilter);
+                    osc.connect(f2); f2.connect(f2Gain); f2Gain.connect(airFilter);
+                    osc.connect(f3); f3.connect(f3Gain); f3Gain.connect(airFilter);
+
+                    if (panner) {
+                        airFilter.connect(env).connect(panner);
+                        // 35% direct distant voice + 65% open-field acoustic reflection!
+                        const directGain = audioCtx.createGain();
+                        directGain.gain.value = 0.42;
+                        panner.connect(directGain).connect(masterGain);
+                        panner.connect(reverbSend);
+                    } else {
+                        airFilter.connect(env);
+                        env.connect(masterGain);
+                        env.connect(reverbSend);
+                    }
+
+                    osc.start(pStart);
+                    vib.start(pStart);
+                    osc.stop(pEnd + 0.05);
+                    vib.stop(pEnd + 0.05);
+                }
+            }
+
+            // --------------------------------------------------------------------------
+            // VILLAGE WILDLIFE, FOLK INSTRUMENTS & INTERACTIVE FOLEY SYNTHESIZERS
+            // --------------------------------------------------------------------------
+
+            // 1. Melodic Doel & Kokil (Asian Koel "Ku-oo") Bird Songs
+            function triggerBirdCall(now, forceKoel = false) {
+                if (!audioCtx || isMuted) return;
+                const isKoel = forceKoel || Math.random() < 0.38;
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sine';
+
+                if (isKoel) {
+                    // Classic rising two-note Bengali Kokil "Ku-ooo!"
+                    const f0 = 980 + Math.random() * 90;
+                    osc.frequency.setValueAtTime(f0, now);
+                    osc.frequency.exponentialRampToValueAtTime(f0 * 1.26, now + 0.18);
+                    osc.frequency.setValueAtTime(f0 * 1.05, now + 0.24);
+                    osc.frequency.exponentialRampToValueAtTime(f0 * 1.42, now + 0.55);
+                    g.gain.setValueAtTime(0.0001, now);
+                    g.gain.linearRampToValueAtTime(0.032, now + 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.004, now + 0.21);
+                    g.gain.linearRampToValueAtTime(0.038, now + 0.28);
+                    g.gain.exponentialRampToValueAtTime(0.0005, now + 0.62);
+                    osc.connect(g);
+                    g.connect(masterGain);
+                    g.connect(reverbSend);
+                    osc.start(now);
+                    osc.stop(now + 0.65);
+                } else {
+                    // Sweet liquid Doel (Magpie Robin) morning whistle phrase
+                    const base = 1560 + Math.random() * 380;
+                    osc.frequency.setValueAtTime(base, now);
+                    osc.frequency.exponentialRampToValueAtTime(base * 1.24, now + 0.09);
+                    osc.frequency.exponentialRampToValueAtTime(base * 0.91, now + 0.22);
+                    osc.frequency.exponentialRampToValueAtTime(base * 1.18, now + 0.34);
+                    g.gain.setValueAtTime(0.0001, now);
+                    g.gain.linearRampToValueAtTime(0.028, now + 0.04);
+                    g.gain.exponentialRampToValueAtTime(0.0006, now + 0.38);
+                    osc.connect(g);
+                    g.connect(masterGain);
+                    g.connect(reverbSend);
+                    osc.start(now);
+                    osc.stop(now + 0.40);
+                }
+            }
+
+            // 2. Authentic 4-Syllable Village Rooster Crow ("Kuk-ku-ru-kuuu!")
+            function triggerRoosterCrow(now) {
+                if (!audioCtx || isMuted) return;
+                const syllables = [
+                    { t: 0.00, d: 0.11, f0: 520, f1: 680 },
+                    { t: 0.14, d: 0.10, f0: 620, f1: 790 },
+                    { t: 0.27, d: 0.12, f0: 580, f1: 860 },
+                    { t: 0.42, d: 0.58, f0: 880, f1: 640 }
+                ];
+                for (const s of syllables) {
+                    const osc = audioCtx.createOscillator();
+                    const bpf = audioCtx.createBiquadFilter();
+                    const g = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    bpf.type = 'bandpass';
+                    bpf.frequency.value = 1150;
+                    bpf.Q.value = 3.2;
+                    osc.frequency.setValueAtTime(s.f0, now + s.t);
+                    osc.frequency.exponentialRampToValueAtTime(s.f1, now + s.t + s.d);
+                    g.gain.setValueAtTime(0.0001, now + s.t);
+                    g.gain.linearRampToValueAtTime(0.026, now + s.t + 0.025);
+                    g.gain.exponentialRampToValueAtTime(0.0005, now + s.t + s.d);
+                    osc.connect(bpf).connect(g);
+                    g.connect(masterGain);
+                    g.connect(reverbSend);
+                    osc.start(now + s.t);
+                    osc.stop(now + s.t + s.d + 0.02);
+                }
+            }
+
+            // 3. Nostalgic 1990s Tea-Stall Radio Bamboo Flute (Banshi) Bhatiyali Phrase
+            function triggerTeaStallBanshi(now) {
+                if (!audioCtx || isMuted) return;
+                // Soft pentatonic Bhatiyali phrase on bamboo flute: A4 -> B4 -> D5 -> E5 -> D5 -> B4 -> A4
+                const notes = [
+                    { t: 0.0, d: 0.55, f: 440.0 },
+                    { t: 0.5, d: 0.45, f: 493.88 },
+                    { t: 0.9, d: 0.70, f: 587.33 },
+                    { t: 1.55, d: 0.85, f: 659.25 },
+                    { t: 2.35, d: 0.95, f: 587.33 }
+                ];
+                for (const n of notes) {
+                    const osc = audioCtx.createOscillator();
+                    const lpf = audioCtx.createBiquadFilter();
+                    const g = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    lpf.type = 'lowpass';
+                    lpf.frequency.value = 1200; // warm medium-wave radio + bamboo tone
+                    osc.frequency.setValueAtTime(n.f * 0.98, now + n.t);
+                    osc.frequency.exponentialRampToValueAtTime(n.f, now + n.t + 0.08);
+                    g.gain.setValueAtTime(0.0001, now + n.t);
+                    g.gain.linearRampToValueAtTime(0.022, now + n.t + 0.08);
+                    g.gain.exponentialRampToValueAtTime(0.0005, now + n.t + n.d);
+                    osc.connect(lpf).connect(g);
+                    g.connect(masterGain);
+                    g.connect(reverbSend);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.d + 0.02);
+                }
+            }
+
+            // 4. Rhythmic Wooden Oar (Boitha) Water Dip & Pond Splash
+            function triggerWaterSplash(now, intensity = 1.0) {
                 if (!audioCtx || isMuted) return;
                 const osc = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
                 osc.type = 'sine';
-                const base = 1480 + Math.random() * 520;
-                osc.frequency.setValueAtTime(base, now);
-                osc.frequency.exponentialRampToValueAtTime(base * 1.28, now + 0.11);
-                osc.frequency.exponentialRampToValueAtTime(base * 0.92, now + 0.26);
-                g.gain.setValueAtTime(0.001, now);
-                g.gain.linearRampToValueAtTime(0.032, now + 0.04);
-                g.gain.exponentialRampToValueAtTime(0.0008, now + 0.28);
+                const fStart = 240 + Math.random() * 80;
+                osc.frequency.setValueAtTime(fStart, now);
+                osc.frequency.exponentialRampToValueAtTime(520, now + 0.14);
+                g.gain.setValueAtTime(0.0001, now);
+                g.gain.linearRampToValueAtTime(0.028 * intensity, now + 0.03);
+                g.gain.exponentialRampToValueAtTime(0.0005, now + 0.18);
                 osc.connect(g).connect(masterGain);
                 osc.start(now);
-                osc.stop(now + 0.3);
+                osc.stop(now + 0.20);
+            }
+
+            // 5. Cast-Iron Hand Tubewell (Chapakol) Pump Creak & Cool Water Gush
+            function triggerTubewellPump(now) {
+                if (!audioCtx || isMuted) return;
+                tubewellPumpAnim = 1.0;
+                // Iron lever squeak
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(540, now);
+                osc.frequency.linearRampToValueAtTime(780, now + 0.16);
+                osc.frequency.linearRampToValueAtTime(490, now + 0.32);
+                g.gain.setValueAtTime(0.0001, now);
+                g.gain.linearRampToValueAtTime(0.025, now + 0.05);
+                g.gain.exponentialRampToValueAtTime(0.0005, now + 0.35);
+                osc.connect(g).connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 0.36);
+                // Water gush splash 0.22s later
+                triggerWaterSplash(now + 0.22, 1.4);
+            }
+
+            // 6. Warm Distant Cow Lowing ("Hamba")
+            function triggerCowLow(now) {
+                if (!audioCtx || isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const bpf = audioCtx.createBiquadFilter();
+                const g = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                bpf.type = 'bandpass';
+                bpf.frequency.value = 340;
+                bpf.Q.value = 3.5;
+                osc.frequency.setValueAtTime(135, now);
+                osc.frequency.linearRampToValueAtTime(162, now + 0.35);
+                osc.frequency.exponentialRampToValueAtTime(118, now + 1.15);
+                g.gain.setValueAtTime(0.0001, now);
+                g.gain.linearRampToValueAtTime(0.032, now + 0.2);
+                g.gain.exponentialRampToValueAtTime(0.0005, now + 1.2);
+                osc.connect(bpf).connect(g);
+                g.connect(masterGain);
+                g.connect(reverbSend);
+                osc.start(now);
+                osc.stop(now + 1.25);
             }
 
             function triggerBucketDrip(now) {
@@ -3626,11 +4060,11 @@
                 const osc = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(620, now);
-                osc.frequency.exponentialRampToValueAtTime(1180, now + 0.065);
+                osc.frequency.setValueAtTime(590 + Math.random() * 40, now);
+                osc.frequency.exponentialRampToValueAtTime(1140, now + 0.065);
                 g.gain.setValueAtTime(0.001, now);
-                g.gain.linearRampToValueAtTime(0.038, now + 0.01);
-                g.gain.exponentialRampToValueAtTime(0.0008, now + 0.08);
+                g.gain.linearRampToValueAtTime(0.034, now + 0.01);
+                g.gain.exponentialRampToValueAtTime(0.0008, now + 0.085);
                 osc.connect(g).connect(masterGain);
                 osc.start(now);
                 osc.stop(now + 0.09);
@@ -3643,18 +4077,20 @@
                 if (isFrog) {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(165, now);
-                    osc.frequency.linearRampToValueAtTime(215, now + 0.14);
+                    osc.frequency.linearRampToValueAtTime(218, now + 0.14);
                     g.gain.setValueAtTime(0.001, now);
-                    g.gain.linearRampToValueAtTime(0.028, now + 0.04);
-                    g.gain.exponentialRampToValueAtTime(0.0008, now + 0.18);
-                    osc.connect(g).connect(masterGain);
+                    g.gain.linearRampToValueAtTime(0.026, now + 0.04);
+                    g.gain.exponentialRampToValueAtTime(0.0008, now + 0.19);
+                    osc.connect(g);
+                    g.connect(masterGain);
+                    g.connect(reverbSend);
                     osc.start(now);
-                    osc.stop(now + 0.2);
+                    osc.stop(now + 0.21);
                 } else {
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(4150 + Math.random() * 200, now);
+                    osc.frequency.setValueAtTime(4120 + Math.random() * 220, now);
                     g.gain.setValueAtTime(0.001, now);
-                    g.gain.linearRampToValueAtTime(0.014, now + 0.03);
+                    g.gain.linearRampToValueAtTime(0.012, now + 0.03);
                     g.gain.exponentialRampToValueAtTime(0.0008, now + 0.12);
                     osc.connect(g).connect(masterGain);
                     osc.start(now);
@@ -3667,59 +4103,100 @@
                 const osc = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(72, now);
-                osc.frequency.exponentialRampToValueAtTime(34, now + 1.8);
+                osc.frequency.setValueAtTime(68, now);
+                osc.frequency.exponentialRampToValueAtTime(32, now + 2.2);
                 const lpf = audioCtx.createBiquadFilter();
                 lpf.type = 'lowpass';
-                lpf.frequency.value = 140;
+                lpf.frequency.value = 130;
                 g.gain.setValueAtTime(0.001, now);
-                g.gain.linearRampToValueAtTime(0.09, now + 0.18);
-                g.gain.exponentialRampToValueAtTime(0.001, now + 2.1);
-                osc.connect(lpf).connect(g).connect(masterGain);
+                g.gain.linearRampToValueAtTime(0.085, now + 0.22);
+                g.gain.exponentialRampToValueAtTime(0.0008, now + 2.5);
+                osc.connect(lpf).connect(g);
+                g.connect(masterGain);
+                g.connect(reverbSend);
                 osc.start(now);
-                osc.stop(now + 2.2);
+                osc.stop(now + 2.6);
             }
 
             function updateAudioSoundscape(state) {
                 if (!audioCtx || isMuted) return;
-                const now = audioCtx.currentTime;
-                const { t, wind, rain, lightning, nightLife } = state;
-
-                windFilter.frequency.setTargetAtTime(210 + wind * 460, now, 0.15);
-                windGain.gain.setTargetAtTime(0.025 + wind * 0.14, now, 0.15);
-                rainGain.gain.setTargetAtTime(rain * 0.22, now, 0.2);
-
-                if (t < 34 && now > nextBirdTime) {
-                    triggerBirdCall(now);
-                    nextBirdTime = now + 1.4 + Math.random() * 2.4;
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().catch(() => { });
                 }
+                const now = audioCtx.currentTime;
+                const { t, wind, rain, lightning, nightLife, stoveSmoke } = state;
+
+                // Smooth continuous environmental modulation
+                windFilter.frequency.setTargetAtTime(195 + wind * 420, now, 0.25);
+                windGain.gain.setTargetAtTime(0.022 + wind * 0.12, now, 0.25);
+                leavesGain.gain.setTargetAtTime(0.010 + wind * 0.055, now, 0.25);
+                rainGain.gain.setTargetAtTime(rain * 0.18, now, 0.3);
+                tinRoofGain.gain.setTargetAtTime(rain * 0.095, now, 0.3);
+                stoveCrackleGain.gain.setTargetAtTime(stoveSmoke * 0.012, now, 0.3);
+
+                // 1. Automatic Distant Unamplified Azan at Fajr (Morning 1.2s) and Maghrib (After Rain Dusk 75.5s)
+                const azanWin = (t >= 1.2 && t < 14.0) ? 1 : (t >= 75.5 && t < 87.5) ? 2 : 0;
+                if (azanWin !== 0 && azanWin !== lastAutoAzanWindow) {
+                    lastAutoAzanWindow = azanWin;
+                    triggerUnamplifiedAzan(0.1);
+                    spawnSoundRipple(468, 388, '🕌 নির্মল আজান · Distant Azan');
+                } else if (azanWin === 0) {
+                    lastAutoAzanWindow = 0;
+                }
+
+                // Visual gentle sound rings from distant mosque while Azan is active
+                if (now < azanActiveUntil && Math.random() < 0.04) {
+                    spawnSoundRipple(468, 388, '', 'rgba(255, 235, 180, 0.45)');
+                }
+
+                // 2. Morning Rooster Crow (0-14s)
+                if (t < 14 && now > nextRoosterTime) {
+                    triggerRoosterCrow(now);
+                    nextRoosterTime = now + 6.5 + Math.random() * 5.0;
+                }
+
+                // 3. Morning & Daytime Birds (Doel & Kokil, 0-35s)
+                if (t < 35 && now > nextBirdTime) {
+                    triggerBirdCall(now);
+                    nextBirdTime = now + 1.8 + Math.random() * 2.6;
+                }
+
+                // 4. Country Boat (Nouka) Wooden Oar Dip on River (0-42s)
+                if (t < 42 && rain < 0.2 && now > nextOarTime) {
+                    triggerWaterSplash(now, 0.55);
+                    nextOarTime = now + 2.8 + Math.random() * 1.5;
+                }
+
+                // 5. Tea Stall Radio Bamboo Flute (Banshi) Melody in Daytime (16-34s)
+                if (t > 16 && t < 34 && now > nextFluteTime) {
+                    triggerTeaStallBanshi(now);
+                    nextFluteTime = now + 7.5 + Math.random() * 4.0;
+                }
+
+                // 6. Distant Thunder Rumble on Nor'wester Lightning
                 if (lightning > 0.5 && t - lastThunderTrigger > 4.0) {
                     triggerThunder(now);
                     lastThunderTrigger = t;
                 }
+
+                // 7. Veranda Bucket Drip Plink during Monsoon Rain
                 if (rain > 0.25 && now > nextDripTime) {
                     triggerBucketDrip(now);
-                    nextDripTime = now + 0.55 + Math.random() * 0.35;
+                    nextDripTime = now + 0.52 + Math.random() * 0.35;
                 }
-                if (nightLife > 0.2 && now > nextCricketTime) {
-                    triggerCricketOrFrog(now, Math.random() < 0.28);
-                    nextCricketTime = now + 0.22 + Math.random() * 0.45;
+
+                // 8. Evening Crickets & Pond Frogs after Rain (73-89.5s)
+                if ((nightLife > 0.15 || t > 73) && now > nextCricketTime) {
+                    triggerCricketOrFrog(now, Math.random() < 0.32);
+                    nextCricketTime = now + 0.24 + Math.random() * 0.42;
                 }
             }
 
-            function toggleAudio() {
-                initAudioEngine();
-                if (!audioCtx) return;
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                isMuted = !isMuted;
-                const now = audioCtx.currentTime;
-                masterGain.gain.setTargetAtTime(isMuted ? 0.0001 : 0.85, now, 0.12);
-
+            function updateAudioButtonUI() {
                 const btn = document.getElementById('audio-btn');
                 const icon = document.getElementById('audio-icon');
                 const label = document.getElementById('audio-label');
+                if (!btn) return;
                 if (isMuted) {
                     btn.classList.remove('playing');
                     icon.textContent = '🔇';
@@ -3727,8 +4204,27 @@
                 } else {
                     btn.classList.add('playing');
                     icon.textContent = '🔊';
-                    label.textContent = 'Sound On';
+                    label.textContent = 'Sound Active · Tap Village';
                 }
+            }
+
+            function ensureAudioUnlocked() {
+                if (!audioCtx) initAudioEngine();
+                if (audioCtx && audioCtx.state === 'suspended' && !isMuted) {
+                    audioCtx.resume().catch(() => { });
+                }
+            }
+
+            function toggleAudio() {
+                ensureAudioUnlocked();
+                if (!audioCtx) return;
+                isMuted = !isMuted;
+                const now = audioCtx.currentTime;
+                masterGain.gain.setTargetAtTime(isMuted ? 0.0001 : 0.90, now, 0.15);
+                if (!isMuted && audioCtx.state === 'suspended') {
+                    audioCtx.resume().catch(() => { });
+                }
+                updateAudioButtonUI();
             }
 
             function suspendAudioOnHide() {
@@ -3742,18 +4238,102 @@
                 }
             }
 
-            let firstTapHandled = false;
-            function handleFirstInteraction() {
-                if (!firstTapHandled) {
-                    firstTapHandled = true;
-                    if (isMuted) toggleAudio();
+            // Auto-initialize audio immediately on load & unlock seamlessly on any first gesture
+            window.addEventListener('DOMContentLoaded', () => {
+                initAudioEngine();
+                updateAudioButtonUI();
+                if (audioCtx && audioCtx.state === 'running') {
+                    triggerUnamplifiedAzan(0.4);
                 }
+            });
+            ['pointerdown', 'pointermove', 'touchstart', 'keydown'].forEach(evt => {
+                window.addEventListener(evt, () => {
+                    if (!audioCtx) {
+                        initAudioEngine();
+                        if (filmTime < 15 || filmTime > 74) triggerUnamplifiedAzan(0.2);
+                    } else if (audioCtx.state === 'suspended' && !isMuted) {
+                        audioCtx.resume().then(() => {
+                            if ((filmTime < 15 || filmTime > 74) && audioCtx.currentTime > azanActiveUntil) {
+                                triggerUnamplifiedAzan(0.15);
+                            }
+                        }).catch(() => { });
+                    }
+                }, { once: false, passive: true });
+            });
+
+            // Dedicated Azan Button in Top Bar
+            const azanBtnEl = document.getElementById('azan-btn');
+            if (azanBtnEl) {
+                azanBtnEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    isMuted = false;
+                    ensureAudioUnlocked();
+                    updateAudioButtonUI();
+                    azanActiveUntil = 0; // allow immediate re-trigger
+                    triggerUnamplifiedAzan(0.05);
+                    spawnSoundRipple(468, 388, '🕌 নির্মল আজান · Unamplified Village Azan');
+                });
             }
-            canvas.addEventListener('pointerdown', handleFirstInteraction);
+
             document.getElementById('audio-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
-                firstTapHandled = true;
                 toggleAudio();
+            });
+
+            // Interactive Canvas Click / Tap Sound Hotspots (convert screen tap to 1600x900 world coordinates)
+            let currentCamTransform = { offsetX: 0, offsetY: 0, scale: 1 };
+            canvas.addEventListener('pointerdown', (e) => {
+                ensureAudioUnlocked();
+                if (isMuted) {
+                    isMuted = false;
+                    if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(0.90, audioCtx.currentTime, 0.12);
+                    updateAudioButtonUI();
+                }
+                if (!audioCtx) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                const wx = (sx - currentCamTransform.offsetX) / currentCamTransform.scale;
+                const wy = (sy - currentCamTransform.offsetY) / currentCamTransform.scale;
+                const now = audioCtx.currentTime;
+
+                // Check which village element the user tapped!
+                if (wy < 425 && wx > 340 && wx < 620) {
+                    // Tapped the distant mosque / horizon
+                    azanActiveUntil = 0;
+                    triggerUnamplifiedAzan(0.02);
+                    spawnSoundRipple(468, 388, '🕌 মসজিদের আজান · Distant Azan');
+                } else if (Math.hypot(wx - 755, wy - 555) < 55) {
+                    // Tapped the Cast-Iron Hand Tubewell (Chapakol)
+                    triggerTubewellPump(now);
+                    spawnSoundRipple(755, 550, '💧 চাপাকল · Hand Tubewell');
+                } else if (wx > 105 && wx < 345 && wy > 435 && wy < 565) {
+                    // Tapped the Tea Stall / Radio / Rickshaw
+                    triggerTeaStallBanshi(now);
+                    spawnSoundRipple(180, 495, '📻 চায়ের দোকানের বাঁশি · Radio Banshi');
+                } else if (wy > 625 && wx > 420) {
+                    // Tapped the Pond (Pukur) / Shapla / Ducks
+                    triggerWaterSplash(now, 1.25);
+                    ripples.push({ x: wx, y: wy, r: 2, maxR: 32, speed: 24 });
+                    spawnSoundRipple(wx, wy, '🌊 পুকুরের জল · Pond Ripple');
+                } else if (wx > 1250 && wy > 470 && wy < 580) {
+                    // Tapped the Cow / Goat / Cattle Shed
+                    triggerCowLow(now);
+                    spawnSoundRipple(wx, wy, '🐄 দেশি গরু · Village Cow');
+                } else if (Math.hypot(wx - 792, wy - 492) < 60) {
+                    // Tapped the Rooster on the Bamboo Fence
+                    triggerRoosterCrow(now);
+                    spawnSoundRipple(792, 485, '🐓 মোরগের ডাক · Rooster Crow');
+                } else if (wy >= 390 && wy <= 470 && wx < 850) {
+                    // Tapped the River / Nouka boat
+                    triggerWaterSplash(now, 1.0);
+                    spawnSoundRipple(wx, wy, '⛵ নৌকার বৈঠা · Country Boat Oar');
+                } else {
+                    // Tapped Trees / Sky / Paddy Fields -> Melodic Doel or Kokil bird call
+                    triggerBirdCall(now, wy < 320);
+                    spawnSoundRipple(wx, wy, wy < 320 ? '🐦 কোকিলের ডাক · Cuckoo Call' : '🐦 দোয়েলের শিস · Doel Whistle');
+                }
             });
 
             // ============================================================================
@@ -3859,6 +4439,42 @@
                 drawCharactersAndWildlife(sctx, state);
                 drawWeatherAndLightOverlays(sctx, state, dt);
 
+                // Draw interactive tubewell pump animation & sound-wave ripples in world space
+                if (tubewellPumpAnim > 0.01) {
+                    tubewellPumpAnim = Math.max(0, tubewellPumpAnim - dt * 2.4);
+                    const pumpAng = Math.sin(tubewellPumpAnim * Math.PI * 2) * 0.45;
+                    sctx.save();
+                    // Gushing cool water stream from tubewell spout
+                    sctx.strokeStyle = 'rgba(210, 240, 255, 0.85)';
+                    sctx.lineWidth = 3.2;
+                    sctx.beginPath();
+                    sctx.moveTo(742, 552);
+                    sctx.quadraticCurveTo(732, 562, 730, 575);
+                    sctx.stroke();
+                    sctx.restore();
+                }
+                if (soundRipples.length > 0) {
+                    sctx.save();
+                    for (let i = soundRipples.length - 1; i >= 0; i--) {
+                        const sr = soundRipples[i];
+                        sr.r += dt * 42;
+                        sr.alpha = Math.max(0, 1 - sr.r / sr.maxR);
+                        sctx.strokeStyle = sr.color.replace(/[0-9.]+\)$/, `${sr.alpha * 0.75})`);
+                        sctx.lineWidth = 1.6;
+                        sctx.beginPath();
+                        sctx.arc(sr.x, sr.y, sr.r, 0, Math.PI * 2);
+                        sctx.stroke();
+                        if (sr.label && sr.alpha > 0.15) {
+                            sctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Noto Sans Bengali", sans-serif';
+                            sctx.fillStyle = `rgba(255, 248, 225, ${sr.alpha})`;
+                            sctx.textAlign = 'center';
+                            sctx.fillText(sr.label, sr.x, sr.y - 12 - (1 - sr.alpha) * 14);
+                        }
+                        if (sr.r >= sr.maxR) soundRipples.splice(i, 1);
+                    }
+                    sctx.restore();
+                }
+
                 ctx.save();
                 ctx.scale(dpr, dpr);
 
@@ -3893,6 +4509,7 @@
                 const offsetX = viewW * 0.5 - camCenterX * scale;
                 const offsetY = viewH * 0.5 - camCenterY * scale;
 
+                currentCamTransform = { offsetX, offsetY, scale };
                 ctx.drawImage(sceneCanvas, offsetX, offsetY, drawW, drawH);
 
                 drawFilmFinishAndTitle(ctx, viewW, viewH, state);
