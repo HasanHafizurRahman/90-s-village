@@ -3595,7 +3595,8 @@
             // Distant Morning Azan MP3 Track (strictly play first 18.5s only)
             const AZAN_AUDIO_URL = 'morning-azan-by-freesound-community-royalty-free-music-55652.mp3';
             const AZAN_MAX_DURATION = 18.5; // strictly play first 18.5 seconds (opening Allahu Akbar call)
-            const AZAN_FADE_START = 14.8;   // begin soft natural fade-out into morning nature at 15.8s
+            const AZAN_FADE_START = 14.8;   // begin soft natural fade-out into morning nature at 14.8s
+            const AZAN_VOLUME = 0.05;       // gentle, peaceful distant volume across open paddy fields
             let azanAudioBuffer = null;
             let azanBufferLoading = false;
             let currentAzanSource = null;
@@ -3824,7 +3825,7 @@
 
                         const azanGain = audioCtx.createGain();
                         const t0 = audioCtx.currentTime + startOffset;
-                        const targetGain = 0.72;
+                        const targetGain = AZAN_VOLUME;
 
                         // Soft vocal onset, full opening call, gentle exponential fade-out over last 2.7s
                         azanGain.gain.setValueAtTime(0.0001, t0);
@@ -3876,7 +3877,7 @@
                 }
                 try {
                     fallbackAzanAudio.currentTime = 0;
-                    fallbackAzanAudio.volume = isMuted ? 0 : 0.62;
+                    fallbackAzanAudio.volume = isMuted ? 0 : AZAN_VOLUME;
                     const p = fallbackAzanAudio.play();
                     if (p) p.catch(() => { });
 
@@ -3895,7 +3896,7 @@
                             fallbackAzanFadeInterval = null;
                         } else if (elapsed >= AZAN_FADE_START) {
                             const ratio = Math.max(0, (AZAN_MAX_DURATION - elapsed) / (AZAN_MAX_DURATION - AZAN_FADE_START));
-                            fallbackAzanAudio.volume = Math.max(0, (isMuted ? 0 : 0.62) * ratio);
+                            fallbackAzanAudio.volume = Math.max(0, (isMuted ? 0 : AZAN_VOLUME) * ratio);
                         }
                     }, 50);
                 } catch (e) {
@@ -4240,7 +4241,7 @@
                 masterGain.gain.setTargetAtTime(isMuted ? 0.0001 : 0.90, now, 0.15);
                 if (fallbackAzanAudio) {
                     if (isMuted) fallbackAzanAudio.volume = 0;
-                    else if (now < azanActiveUntil) fallbackAzanAudio.volume = 0.62;
+                    else if (now < azanActiveUntil) fallbackAzanAudio.volume = AZAN_VOLUME;
                 }
                 if (isMuted) {
                     stopCurrentAzan();
