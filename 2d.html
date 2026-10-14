@@ -1,0 +1,3908 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ফেলে আসা গ্রাম — 1990s Bangladeshi Village</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0d0c0a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif;
+            color: #f4ebd9;
+            touch-action: manipulation;
+        }
+
+        #stage-wrap {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0d0c0a;
+        }
+
+        canvas#film {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .hud {
+            position: fixed;
+            z-index: 10;
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+
+        body.idle .hud-fade {
+            opacity: 0.28;
+        }
+
+        body.idle .hud-fade:hover {
+            opacity: 1;
+        }
+
+        #top-bar {
+            top: 14px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pill-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            pointer-events: auto;
+            background: rgba(16, 14, 11, 0.52);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            padding: 4px;
+            border-radius: 999px;
+            border: 1px solid rgba(244, 235, 217, 0.14);
+        }
+
+        .stage-btn,
+        .ctrl-btn {
+            pointer-events: auto;
+            appearance: none;
+            border: none;
+            background: transparent;
+            color: rgba(244, 235, 217, 0.78);
+            font-size: 11.5px;
+            letter-spacing: 0.02em;
+            padding: 5px 11px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .stage-btn:hover,
+        .ctrl-btn:hover {
+            color: #fff8eb;
+            background: rgba(244, 235, 217, 0.12);
+        }
+
+        .stage-btn.active {
+            background: rgba(226, 169, 82, 0.26);
+            color: #ffd996;
+            border: 1px solid rgba(226, 169, 82, 0.45);
+        }
+
+        #audio-btn {
+            background: rgba(16, 14, 11, 0.58);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(244, 235, 217, 0.18);
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: #f4ebd9;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+        }
+
+        #audio-btn.playing {
+            border-color: rgba(226, 169, 82, 0.45);
+            color: #ffe0a3;
+        }
+
+        #bottom-bar {
+            bottom: 12px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            color: rgba(244, 235, 217, 0.72);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            padding: 0 2px;
+        }
+
+        #progress-track {
+            pointer-events: auto;
+            width: 100%;
+            height: 6px;
+            background: rgba(244, 235, 217, 0.16);
+            border-radius: 999px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            transition: height 0.15s ease;
+        }
+
+        #progress-track:hover {
+            height: 9px;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #e59866, #f5cba7, #7fb3d5, #5499c7, #f39c12);
+            border-radius: 999px;
+            transition: width 0.08s linear;
+        }
+
+        .chapter-ticks {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .tick {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(13, 12, 10, 0.55);
+        }
+
+        @media (max-width: 640px) {
+            #top-bar {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+
+            .stage-btn {
+                font-size: 10.5px;
+                padding: 4px 8px;
+            }
+
+            #audio-btn {
+                font-size: 11px;
+                padding: 5px 11px;
+            }
+
+            #bottom-bar {
+                bottom: 8px;
+                left: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="stage-wrap">
+        <canvas id="film" aria-label="ফেলে আসা গ্রাম — 1990s Bangladeshi Village Hand-Painted Animation"></canvas>
+
+        <div id="top-bar" class="hud hud-fade">
+            <div class="pill-group" role="group" aria-label="Build Stages">
+                <button class="stage-btn" data-stage="1" title="Stage 1: Environment & Parallax Only">1 ·
+                    Environment</button>
+                <button class="stage-btn" data-stage="2" title="Stage 2: + Time-of-Day & Weather">2 · Weather &amp;
+                    Light</button>
+                <button class="stage-btn" data-stage="3" title="Stage 3: + Characters & Wildlife">3 ·
+                    Characters</button>
+                <button class="stage-btn active" data-stage="4" title="Stage 4: Complete Film with Audio & Polish">4 ·
+                    Full Film</button>
+            </div>
+            <button id="audio-btn" class="ctrl-btn" type="button" aria-label="Toggle Sound">
+                <span id="audio-icon">🔇</span>
+                <span id="audio-label">Tap for Sound</span>
+            </button>
+        </div>
+
+        <div id="bottom-bar" class="hud hud-fade">
+            <div class="meta-row">
+                <span id="act-label">ভোর · Morning Mist (0–15s)</span>
+                <span id="time-label">0:00 / 1:30</span>
+            </div>
+            <div id="progress-track" title="Click or drag to scrub along the 90-second story arc">
+                <div id="progress-fill"></div>
+                <div class="chapter-ticks">
+                    <div class="tick" style="left: 16.66%"></div>
+                    <div class="tick" style="left: 38.88%"></div>
+                    <div class="tick" style="left: 61.11%"></div>
+                    <div class="tick" style="left: 83.33%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            'use strict';
+
+            // ============================================================================
+            // 0. CONFIGURATION, SEEDED PRNG, AND SHARED NOISE FIELD
+            // ============================================================================
+            const DURATION = 90.0;
+            const WORLD_W = 1600;
+            const WORLD_H = 900;
+
+            function mulberry32(seed) {
+                let a = seed >>> 0;
+                return function () {
+                    a |= 0;
+                    a = (a + 0x6D2B79F5) | 0;
+                    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                };
+            }
+
+            const rng = mulberry32(19941014);
+
+            const PERM = new Uint8Array(512);
+            const GRAD = new Float32Array(256);
+            {
+                const nRng = mulberry32(901990);
+                const p = new Uint8Array(256);
+                for (let i = 0; i < 256; i++) {
+                    p[i] = i;
+                    GRAD[i] = nRng() * 2 - 1;
+                }
+                for (let i = 255; i > 0; i--) {
+                    const j = Math.floor(nRng() * (i + 1));
+                    const tmp = p[i];
+                    p[i] = p[j];
+                    p[j] = tmp;
+                }
+                for (let i = 0; i < 512; i++) PERM[i] = p[i & 255];
+            }
+
+            function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+            function lerp(a, b, t) { return a + (b - a) * t; }
+            function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+            function smoothstep(e0, e1, x) {
+                const t = clamp((x - e0) / (e1 - e0), 0, 1);
+                return t * t * (3 - 2 * t);
+            }
+
+            function noise2D(x, y) {
+                const xi = Math.floor(x) & 255;
+                const yi = Math.floor(y) & 255;
+                const xf = x - Math.floor(x);
+                const yf = y - Math.floor(y);
+                const u = fade(xf);
+                const v = fade(yf);
+                const aa = PERM[PERM[xi] + yi];
+                const ab = PERM[PERM[xi] + yi + 1];
+                const ba = PERM[PERM[xi + 1] + yi];
+                const bb = PERM[PERM[xi + 1] + yi + 1];
+                return lerp(
+                    lerp(GRAD[aa], GRAD[ba], u),
+                    lerp(GRAD[ab], GRAD[bb], u),
+                    v
+                );
+            }
+
+            function fbm2D(x, y) {
+                return 0.55 * noise2D(x, y) + 0.30 * noise2D(x * 2.03, y * 2.03) + 0.15 * noise2D(x * 4.07, y * 4.07);
+            }
+
+            function hexToRgb(hex) {
+                const n = parseInt(hex.slice(1), 16);
+                return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+            }
+            function lerpColor(c1, c2, t) {
+                const r = Math.round(lerp(c1[0], c2[0], t));
+                const g = Math.round(lerp(c1[1], c2[1], t));
+                const b = Math.round(lerp(c1[2], c2[2], t));
+                return `rgb(${r},${g},${b})`;
+            }
+            function lerpRgba(c1, c2, t, alpha) {
+                const r = Math.round(lerp(c1[0], c2[0], t));
+                const g = Math.round(lerp(c1[1], c2[1], t));
+                const b = Math.round(lerp(c1[2], c2[2], t));
+                return `rgba(${r},${g},${b},${alpha})`;
+            }
+
+            // ============================================================================
+            // 1. STATE, RESPONSIVE CANVAS, REDUCED MOTION & VISIBILITY HANDLING
+            // ============================================================================
+            const canvas = document.getElementById('film');
+            const ctx = canvas.getContext('2d', { alpha: false });
+
+            let activeStage = 4;
+            let filmTime = 0.0;
+            let lastTimestamp = performance.now();
+            let isPaused = false;
+            let isScrubbing = false;
+            let reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+                    reducedMotion = e.matches;
+                });
+            }
+
+            let viewW = window.innerWidth;
+            let viewH = window.innerHeight;
+            let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+            function resize() {
+                viewW = window.innerWidth;
+                viewH = window.innerHeight;
+                dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.round(viewW * dpr);
+                canvas.height = Math.round(viewH * dpr);
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    isPaused = true;
+                    suspendAudioOnHide();
+                } else {
+                    isPaused = false;
+                    lastTimestamp = performance.now();
+                    resumeAudioOnShow();
+                }
+            });
+
+            // ============================================================================
+            // 2. TIME-OF-DAY PALETTE & WEATHER STATE INTERPOLATOR (0-90s ARC)
+            // ============================================================================
+            const PALETTES = {
+                dawn: {
+                    skyTop: hexToRgb('#394867'),
+                    skyMid: hexToRgb('#d98a6c'),
+                    skyHor: hexToRgb('#f7cf92'),
+                    ambient: [252, 210, 162],
+                    waterTop: hexToRgb('#c88a68'),
+                    waterBot: hexToRgb('#2f4441'),
+                    shadowAlpha: 0.16
+                },
+                day: {
+                    skyTop: hexToRgb('#4f95b8'),
+                    skyMid: hexToRgb('#95cadb'),
+                    skyHor: hexToRgb('#e6f0d5'),
+                    ambient: [255, 250, 232],
+                    waterTop: hexToRgb('#6da8ba'),
+                    waterBot: hexToRgb('#2a5c4a'),
+                    shadowAlpha: 0.04
+                },
+                storm: {
+                    skyTop: hexToRgb('#1b2e35'),
+                    skyMid: hexToRgb('#334e54'),
+                    skyHor: hexToRgb('#59746f'),
+                    ambient: [130, 158, 156],
+                    waterTop: hexToRgb('#375154'),
+                    waterBot: hexToRgb('#182a29'),
+                    shadowAlpha: 0.40
+                },
+                rain: {
+                    skyTop: hexToRgb('#17242b'),
+                    skyMid: hexToRgb('#2b3e47'),
+                    skyHor: hexToRgb('#4a5f66'),
+                    ambient: [112, 134, 144],
+                    waterTop: hexToRgb('#2f444c'),
+                    waterBot: hexToRgb('#142226'),
+                    shadowAlpha: 0.48
+                },
+                golden: {
+                    skyTop: hexToRgb('#3f3b6c'),
+                    skyMid: hexToRgb('#c76b55'),
+                    skyHor: hexToRgb('#f8c471'),
+                    ambient: [255, 194, 128],
+                    waterTop: hexToRgb('#b86b52'),
+                    waterBot: hexToRgb('#2c3a42'),
+                    shadowAlpha: 0.22
+                },
+                night: {
+                    skyTop: hexToRgb('#0f172a'),
+                    skyMid: hexToRgb('#1e2942'),
+                    skyHor: hexToRgb('#383d59'),
+                    ambient: [68, 82, 122],
+                    waterTop: hexToRgb('#1f2b44'),
+                    waterBot: hexToRgb('#0d1522'),
+                    shadowAlpha: 0.58
+                }
+            };
+
+            function mixPalette(pA, pB, t) {
+                return {
+                    skyTop: [lerp(pA.skyTop[0], pB.skyTop[0], t), lerp(pA.skyTop[1], pB.skyTop[1], t), lerp(pA.skyTop[2], pB.skyTop[2], t)],
+                    skyMid: [lerp(pA.skyMid[0], pB.skyMid[0], t), lerp(pA.skyMid[1], pB.skyMid[1], t), lerp(pA.skyMid[2], pB.skyMid[2], t)],
+                    skyHor: [lerp(pA.skyHor[0], pB.skyHor[0], t), lerp(pA.skyHor[1], pB.skyHor[1], t), lerp(pA.skyHor[2], pB.skyHor[2], t)],
+                    ambient: [lerp(pA.ambient[0], pB.ambient[0], t), lerp(pA.ambient[1], pB.ambient[1], t), lerp(pA.ambient[2], pB.ambient[2], t)],
+                    waterTop: [lerp(pA.waterTop[0], pB.waterTop[0], t), lerp(pA.waterTop[1], pB.waterTop[1], t), lerp(pA.waterTop[2], pB.waterTop[2], t)],
+                    waterBot: [lerp(pA.waterBot[0], pB.waterBot[0], t), lerp(pA.waterBot[1], pB.waterBot[1], t), lerp(pA.waterBot[2], pB.waterBot[2], t)],
+                    shadowAlpha: lerp(pA.shadowAlpha, pB.shadowAlpha, t)
+                };
+            }
+
+            function computeWorldState(tRaw) {
+                const t = activeStage === 1 ? 18.0 : ((tRaw % DURATION) + DURATION) % DURATION;
+
+                let pal;
+                if (t < 15) {
+                    const u = smoothstep(0, 15, t);
+                    pal = mixPalette(PALETTES.dawn, PALETTES.day, u * 0.72);
+                } else if (t < 33) {
+                    const u = smoothstep(15, 33, t);
+                    pal = mixPalette(mixPalette(PALETTES.dawn, PALETTES.day, 0.72), PALETTES.day, u);
+                } else if (t < 48) {
+                    const u = smoothstep(33, 48, t);
+                    pal = mixPalette(PALETTES.day, PALETTES.storm, u);
+                } else if (t < 57) {
+                    const u = smoothstep(48, 57, t);
+                    pal = mixPalette(PALETTES.storm, PALETTES.rain, u);
+                } else if (t < 73) {
+                    pal = PALETTES.rain;
+                } else if (t < 81) {
+                    const u = smoothstep(73, 81, t);
+                    pal = mixPalette(PALETTES.rain, PALETTES.golden, u);
+                } else if (t < 86.5) {
+                    const u = smoothstep(81, 86.5, t);
+                    pal = mixPalette(PALETTES.golden, PALETTES.night, u);
+                } else {
+                    const u = smoothstep(86.5, 90.0, t);
+                    pal = mixPalette(PALETTES.night, PALETTES.dawn, u);
+                }
+
+                const mist = clamp(
+                    (1.0 - smoothstep(4, 16, t)) + smoothstep(86.5, 90, t) * 0.85,
+                    0, 1
+                );
+
+                const sunProgress = clamp(t / 82, 0, 1);
+                const sunX = lerp(290, 1280, sunProgress);
+                const sunY = t < 35
+                    ? lerp(320, 115, smoothstep(0, 32, t))
+                    : lerp(115, 355, smoothstep(35, 83, t));
+                const sunVis = clamp(
+                    (1 - smoothstep(34, 43, t)) + smoothstep(74, 79, t) * (1 - smoothstep(82.5, 86, t)) + smoothstep(87.5, 90, t) * 0.75,
+                    0, 1
+                );
+
+                const godRays = clamp(
+                    (1 - smoothstep(2, 15, t)) * 0.85 +
+                    smoothstep(74.5, 78, t) * (1 - smoothstep(80, 84, t)) * 0.75 +
+                    smoothstep(88, 90, t) * 0.65,
+                    0, 1
+                );
+
+                let wind = 0.14;
+                if (t >= 15 && t < 34) wind = lerp(0.14, 0.28, smoothstep(15, 34, t));
+                else if (t >= 34 && t < 55) wind = lerp(0.28, 1.0, smoothstep(34, 44, t));
+                else if (t >= 55 && t < 74) wind = lerp(1.0, 0.45, smoothstep(55, 65, t));
+                else if (t >= 74) wind = lerp(0.45, 0.14, smoothstep(74, 80, t));
+                if (activeStage === 1) wind = 0.22;
+
+                const stormCloud = clamp(smoothstep(33, 45, t) * (1 - smoothstep(73, 80, t)), 0, 1);
+
+                const rain = activeStage >= 2
+                    ? clamp(smoothstep(51, 56, t) * (1 - smoothstep(73, 77.5, t)), 0, 1)
+                    : 0;
+
+                const wetness = activeStage >= 2
+                    ? clamp(smoothstep(52, 59, t) * (1 - smoothstep(84, 89.5, t)), 0, 1)
+                    : 0;
+
+                const rainbow = activeStage >= 2
+                    ? clamp(smoothstep(74.5, 77.5, t) * (1 - smoothstep(81.5, 84.5, t)), 0, 1)
+                    : 0;
+
+                const lantern = activeStage >= 2
+                    ? clamp(smoothstep(47, 53, t) * (1 - smoothstep(87, 89.6, t)), 0, 1)
+                    : 0;
+
+                const nightLife = activeStage >= 2
+                    ? clamp(smoothstep(77, 81.5, t) * (1 - smoothstep(87.2, 89.7, t)), 0, 1)
+                    : 0;
+
+                const stoveSmoke = clamp((1 - smoothstep(14, 24, t)) + smoothstep(87, 90, t), 0, 1);
+
+                let lightning = 0;
+                if (activeStage >= 2 && !reducedMotion && t > 41 && t < 63) {
+                    const fl1 = Math.exp(-Math.pow((t - 44.2) * 7, 2)) + 0.6 * Math.exp(-Math.pow((t - 44.45) * 10, 2));
+                    const fl2 = Math.exp(-Math.pow((t - 51.6) * 8, 2));
+                    const fl3 = Math.exp(-Math.pow((t - 58.3) * 7, 2)) + 0.5 * Math.exp(-Math.pow((t - 58.55) * 11, 2));
+                    lightning = clamp(fl1 + fl2 + fl3, 0, 1);
+                }
+
+                return {
+                    t,
+                    pal,
+                    mist,
+                    sunX,
+                    sunY,
+                    sunVis,
+                    godRays,
+                    wind,
+                    stormCloud,
+                    rain,
+                    wetness,
+                    rainbow,
+                    lantern,
+                    nightLife,
+                    stoveSmoke,
+                    lightning
+                };
+            }
+
+            function sampleWind(x, y, t, windStrength) {
+                const speed = reducedMotion ? 0.35 : 1.0;
+                const w1 = noise2D(x * 0.004 - t * (0.45 + windStrength * 1.1) * speed, y * 0.004 + t * 0.15 * speed);
+                const w2 = Math.sin(x * 0.012 - t * (1.8 + windStrength * 3.4) * speed) * 0.35;
+                return (w1 + w2 + windStrength * 0.65) * windStrength;
+            }
+
+            // ============================================================================
+            // 3. OFFSCREEN STATIC CACHES & HAND-PAINTED BOTANICAL FOLIAGE SPRITES
+            // ============================================================================
+            function createOffscreen(w, h) {
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                return c;
+            }
+
+            // Helper: Paint a realistic, multi-layered gouache leaf cluster onto an offscreen canvas
+            function createPainterlyCanopySprite(w, h, seed, palette, leafStyle = 'banyan') {
+                const c = createOffscreen(w, h);
+                const lctx = c.getContext('2d');
+                const cRng = mulberry32(seed);
+                const cx = w * 0.5;
+                const cy = h * 0.54;
+                const rx = w * 0.42;
+                const ry = h * 0.38;
+
+                // 5 tonal tiers from deep interior shadow to sunlit rim leaves
+                for (let tier = 0; tier < palette.length; tier++) {
+                    lctx.fillStyle = palette[tier];
+                    const count = leafStyle === 'mango' ? 95 : 110;
+                    const tierYOffset = (2 - tier) * (h * 0.045); // upper tiers sit slightly higher (sunlit top)
+                    const spread = 1.0 - tier * 0.08;
+
+                    for (let i = 0; i < count; i++) {
+                        const ang = cRng() * Math.PI * 2;
+                        const dist = Math.pow(cRng(), 0.62) * spread;
+                        const lx = cx + Math.cos(ang) * rx * dist + (cRng() - 0.5) * 14;
+                        const ly = cy + Math.sin(ang) * ry * dist - tier * 5 + tierYOffset + (cRng() - 0.5) * 10;
+
+                        lctx.save();
+                        lctx.translate(lx, ly);
+                        // Radiate leaves outward slightly with natural droop
+                        const leafAng = Math.atan2(ly - cy, lx - cx) * 0.5 + (cRng() - 0.5) * 0.7;
+                        lctx.rotate(leafAng);
+
+                        if (leafStyle === 'mango') {
+                            // Lance-shaped pointed mango leaves
+                            const lw = 11 + cRng() * 8;
+                            const lh = 3.2 + cRng() * 2.2;
+                            lctx.beginPath();
+                            lctx.moveTo(-lw, 0);
+                            lctx.quadraticCurveTo(0, -lh * 1.4, lw, 0);
+                            lctx.quadraticCurveTo(0, lh * 1.4, -lw, 0);
+                            lctx.fill();
+                        } else {
+                            // Broad ovate Banyan / Jackfruit leaves with soft scalloped clusters
+                            const lw = 9 + cRng() * 9;
+                            const lh = 5.5 + cRng() * 4.5;
+                            lctx.beginPath();
+                            lctx.ellipse(0, 0, lw, lh, 0, 0, Math.PI * 2);
+                            lctx.fill();
+                        }
+                        lctx.restore();
+                    }
+                }
+                return c;
+            }
+
+            // Pre-bake 4 distinct botanical canopy sprites for Banyan, Mango, and Jackfruit trees
+            const banyanCanopyA = createPainterlyCanopySprite(260, 190, 501, [
+                '#112214', '#1a331d', '#254728', '#356134', '#527d43'
+            ], 'banyan');
+            const banyanCanopyB = createPainterlyCanopySprite(240, 175, 502, [
+                '#132516', '#1d3820', '#2a4d2c', '#3d6939', '#618c4c'
+            ], 'banyan');
+            const mangoCanopySprite = createPainterlyCanopySprite(210, 165, 601, [
+                '#142615', '#1f3b1e', '#2e5429', '#467335', '#7d6b38' // warm bronze-copper new mango shoots at top!
+            ], 'mango');
+            const jackfruitCanopySprite = createPainterlyCanopySprite(220, 170, 701, [
+                '#102112', '#19331b', '#244725', '#346131', '#4d7a3e'
+            ], 'banyan');
+
+            // 3a. Distant Tree Horizon Cache (bamboo, palms, distant village roofs)
+            const horizonCanvas = createOffscreen(WORLD_W, 240);
+            {
+                const hctx = horizonCanvas.getContext('2d');
+                const hRng = mulberry32(101);
+                for (let layer = 0; layer < 2; layer++) {
+                    hctx.fillStyle = layer === 0 ? '#2e4c3e' : '#223b2f';
+                    hctx.beginPath();
+                    hctx.moveTo(0, 240);
+                    for (let x = 0; x <= WORLD_W; x += 6) {
+                        const n = fbm2D(x * 0.008 + layer * 10, layer * 5);
+                        const dome = Math.abs(Math.sin(x * 0.018 + layer)) * 28 + Math.abs(Math.cos(x * 0.043)) * 8;
+                        const y = 135 + layer * 18 - n * 42 - dome;
+                        hctx.lineTo(x, y);
+                    }
+                    hctx.lineTo(WORLD_W, 240);
+                    hctx.closePath();
+                    hctx.fill();
+
+                    for (let i = 0; i < 34; i++) {
+                        const px = hRng() * WORLD_W;
+                        const py = 112 + layer * 15 - hRng() * 25;
+                        hctx.strokeStyle = layer === 0 ? '#284437' : '#1b3126';
+                        hctx.lineWidth = 1.8;
+                        hctx.beginPath();
+                        hctx.moveTo(px, py + 38);
+                        hctx.quadraticCurveTo(px + (hRng() - 0.5) * 10, py + 15, px, py);
+                        hctx.stroke();
+                        for (let f = 0; f < 7; f++) {
+                            const ang = -Math.PI * 1.1 + (f / 6) * Math.PI * 1.2;
+                            hctx.beginPath();
+                            hctx.moveTo(px, py);
+                            hctx.quadraticCurveTo(px + Math.cos(ang) * 10, py + Math.sin(ang) * 6 - 3, px + Math.cos(ang) * 17, py + Math.sin(ang) * 10 + 4);
+                            hctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // 3b. Static Homestead & Courtyard Ground Base Cache
+            const homesteadCanvas = createOffscreen(WORLD_W, WORLD_H);
+            {
+                const sctx = homesteadCanvas.getContext('2d');
+                const sRng = mulberry32(2026);
+
+                const uthanGrad = sctx.createLinearGradient(700, 440, 1500, 720);
+                uthanGrad.addColorStop(0, '#c6a273');
+                uthanGrad.addColorStop(0.5, '#b89162');
+                uthanGrad.addColorStop(1, '#987348');
+                sctx.fillStyle = uthanGrad;
+                sctx.beginPath();
+                sctx.moveTo(460, 560);
+                sctx.bezierCurveTo(650, 455, 1120, 445, 1600, 450);
+                sctx.lineTo(1600, 750);
+                sctx.bezierCurveTo(1320, 720, 820, 695, 450, 675);
+                sctx.closePath();
+                sctx.fill();
+
+                // Hand-swept broom arc textures & subtle earth pebbles on the courtyard
+                sctx.strokeStyle = 'rgba(120, 84, 48, 0.17)';
+                sctx.lineWidth = 1.1;
+                for (let i = 0; i < 115; i++) {
+                    const cx = 720 + sRng() * 820;
+                    const cy = 500 + sRng() * 155;
+                    const rad = 16 + sRng() * 34;
+                    sctx.beginPath();
+                    sctx.arc(cx, cy, rad, -0.4, 0.9);
+                    sctx.stroke();
+                }
+
+                // Raised earthen path (Aal)
+                const pathGrad = sctx.createLinearGradient(0, 520, 720, 620);
+                pathGrad.addColorStop(0, '#9d7c53');
+                pathGrad.addColorStop(0.5, '#b69164');
+                pathGrad.addColorStop(1, '#c19c6d');
+                sctx.fillStyle = pathGrad;
+                sctx.beginPath();
+                sctx.moveTo(0, 535);
+                sctx.bezierCurveTo(220, 520, 450, 558, 710, 538);
+                sctx.lineTo(720, 650);
+                sctx.bezierCurveTo(450, 645, 220, 600, 0, 595);
+                sctx.closePath();
+                sctx.fill();
+
+                // Organic grass tufts along the earthen path edge
+                for (let x = 4; x < 700; x += 5) {
+                    const yCurve = 574 + Math.sin(x * 0.01) * 10 + (sRng() - 0.5) * 3;
+                    sctx.strokeStyle = x % 2 === 0 ? '#466930' : '#587d3c';
+                    sctx.lineWidth = 1.4;
+                    sctx.beginPath();
+                    sctx.moveTo(x, yCurve + 5);
+                    sctx.quadraticCurveTo(x - 2, yCurve, x - 3, yCurve - 4 - (x % 5));
+                    sctx.moveTo(x + 2, yCurve + 5);
+                    sctx.quadraticCurveTo(x + 4, yCurve, x + 5, yCurve - 3 - ((x + 2) % 4));
+                    sctx.stroke();
+                }
+
+                // Woven Bamboo fence (Bera)
+                function drawBambooFence(x1, y1, x2, y2, h) {
+                    const steps = Math.floor(Math.hypot(x2 - x1, y2 - y1) / 8);
+                    for (let i = 0; i <= steps; i++) {
+                        const u = i / steps;
+                        const bx = lerp(x1, x2, u);
+                        const by = lerp(y1, y2, u);
+                        sctx.fillStyle = i % 2 === 0 ? '#a98c55' : '#967943';
+                        sctx.fillRect(bx - 3, by - h, 5.5, h);
+                        sctx.fillStyle = '#7c6132';
+                        sctx.fillRect(bx - 4, by - h * 0.78, 8, 2.5);
+                        sctx.fillRect(bx - 4, by - h * 0.38, 8, 2.5);
+                    }
+                }
+                drawBambooFence(690, 502, 915, 488, 42);
+                drawBambooFence(1380, 515, 1595, 528, 44);
+
+                // Thatched Cattle Shed (Gohal Ghor)
+                sctx.fillStyle = '#6f5237';
+                sctx.fillRect(1335, 505, 195, 28);
+                sctx.fillStyle = '#5c4228';
+                [1348, 1405, 1465, 1515].forEach(px => sctx.fillRect(px, 425, 7, 85));
+                sctx.fillStyle = '#785a3a';
+                sctx.fillRect(1348, 455, 170, 52);
+                // Haystack (Khorer Gada) with straw texture
+                const hayGrad = sctx.createRadialGradient(1555, 480, 10, 1555, 490, 55);
+                hayGrad.addColorStop(0, '#d8b25c');
+                hayGrad.addColorStop(1, '#9c7834');
+                sctx.fillStyle = hayGrad;
+                sctx.beginPath();
+                sctx.moveTo(1515, 530);
+                sctx.bezierCurveTo(1510, 440, 1595, 440, 1592, 530);
+                sctx.closePath();
+                sctx.fill();
+                // Center bamboo pole of haystack
+                sctx.fillStyle = '#5c4228';
+                sctx.fillRect(1552, 428, 4, 30);
+
+                const shedRoof = sctx.createLinearGradient(1320, 385, 1320, 445);
+                shedRoof.addColorStop(0, '#9c7c44');
+                shedRoof.addColorStop(1, '#6e5329');
+                sctx.fillStyle = shedRoof;
+                sctx.beginPath();
+                sctx.moveTo(1318, 438);
+                sctx.lineTo(1432, 386);
+                sctx.lineTo(1548, 438);
+                sctx.closePath();
+                sctx.fill();
+                sctx.strokeStyle = 'rgba(235, 204, 140, 0.28)';
+                sctx.lineWidth = 1;
+                for (let i = 0; i < 55; i++) {
+                    const tx = 1322 + (i / 55) * 222;
+                    sctx.beginPath();
+                    sctx.moveTo(1432 + (tx - 1432) * 0.18, 390);
+                    sctx.lineTo(tx, 439 + (i % 3));
+                    sctx.stroke();
+                }
+
+                // Secondary Thatched Kitchen Hut (Rannaghor)
+                sctx.fillStyle = '#6a4c32';
+                sctx.fillRect(795, 495, 155, 22);
+                const mudWallK = sctx.createLinearGradient(805, 430, 805, 500);
+                mudWallK.addColorStop(0, '#a37b51');
+                mudWallK.addColorStop(1, '#87623c');
+                sctx.fillStyle = mudWallK;
+                sctx.fillRect(805, 435, 135, 62);
+                sctx.fillStyle = '#4a3520';
+                sctx.fillRect(845, 452, 26, 22);
+                const thatchGrad = sctx.createLinearGradient(780, 382, 780, 445);
+                thatchGrad.addColorStop(0, '#b08d4f');
+                thatchGrad.addColorStop(1, '#7a5c2e');
+                sctx.fillStyle = thatchGrad;
+                sctx.beginPath();
+                sctx.moveTo(782, 442);
+                sctx.quadraticCurveTo(872, 378, 962, 442);
+                sctx.quadraticCurveTo(872, 430, 782, 442);
+                sctx.fill();
+                sctx.beginPath();
+                sctx.moveTo(782, 442);
+                sctx.lineTo(825, 395);
+                sctx.quadraticCurveTo(872, 386, 918, 395);
+                sctx.lineTo(962, 442);
+                sctx.closePath();
+                sctx.fill();
+
+                // Main Homestead House (Kutcha mud-walled home with corrugated Tin Roof & Baranda)
+                const bhitGrad = sctx.createLinearGradient(965, 495, 965, 540);
+                bhitGrad.addColorStop(0, '#785436');
+                bhitGrad.addColorStop(1, '#543922');
+                sctx.fillStyle = bhitGrad;
+                sctx.beginPath();
+                sctx.moveTo(962, 502);
+                sctx.lineTo(1328, 502);
+                sctx.lineTo(1338, 536);
+                sctx.lineTo(952, 536);
+                sctx.closePath();
+                sctx.fill();
+                sctx.fillStyle = '#8c6543';
+                sctx.fillRect(1110, 514, 58, 11);
+                sctx.fillStyle = '#6c4b2e';
+                sctx.fillRect(1106, 525, 66, 11);
+
+                const mainWallGrad = sctx.createLinearGradient(980, 395, 980, 502);
+                mainWallGrad.addColorStop(0, '#b58b60');
+                mainWallGrad.addColorStop(0.6, '#9e764c');
+                mainWallGrad.addColorStop(1, '#835e38');
+                sctx.fillStyle = mainWallGrad;
+                sctx.fillRect(978, 398, 334, 105);
+
+                sctx.strokeStyle = 'rgba(92, 62, 35, 0.25)';
+                sctx.lineWidth = 1.5;
+                for (let wy = 415; wy < 500; wy += 16) {
+                    sctx.beginPath();
+                    sctx.moveTo(980, wy);
+                    sctx.bezierCurveTo(1090, wy + 2, 1200, wy - 2, 1310, wy);
+                    sctx.stroke();
+                }
+
+                sctx.fillStyle = '#3d2817';
+                sctx.fillRect(1042, 428, 42, 74);
+                sctx.strokeStyle = '#614126';
+                sctx.lineWidth = 2;
+                sctx.strokeRect(1042, 428, 42, 74);
+
+                sctx.fillStyle = '#2c1e14';
+                sctx.fillRect(1218, 434, 52, 42);
+                sctx.strokeStyle = '#5c3d24';
+                sctx.lineWidth = 2.5;
+                sctx.strokeRect(1218, 434, 52, 42);
+                sctx.lineWidth = 1.5;
+                for (let wx = 1231; wx < 1270; wx += 13) {
+                    sctx.beginPath();
+                    sctx.moveTo(wx, 434);
+                    sctx.lineTo(wx, 476);
+                    sctx.stroke();
+                }
+
+                // Woven Rice-Storage Basket (Duli / Gola)
+                sctx.fillStyle = '#9c7a44';
+                sctx.beginPath();
+                sctx.ellipse(1006, 478, 18, 24, 0, 0, Math.PI * 2);
+                sctx.fill();
+                sctx.strokeStyle = '#6e5227';
+                sctx.lineWidth = 1.2;
+                for (let dy = 460; dy <= 495; dy += 7) {
+                    sctx.beginPath();
+                    sctx.moveTo(990, dy);
+                    sctx.lineTo(1022, dy);
+                    sctx.stroke();
+                }
+
+                // Shitalpati (woven mat) on the veranda floor
+                sctx.fillStyle = '#d4b87a';
+                sctx.fillRect(1082, 496, 132, 7);
+                sctx.fillStyle = '#9e3b33';
+                sctx.fillRect(1082, 496, 132, 2);
+
+                // Veranda wooden pillars with carved capitals
+                sctx.fillStyle = '#4e341e';
+                [982, 1092, 1198, 1304].forEach(px => {
+                    sctx.fillRect(px, 412, 8, 92);
+                    sctx.fillRect(px - 3, 412, 14, 4);
+                });
+
+                // Main Gabled Corrugated Tin Roof (Chala)
+                const tinGrad = sctx.createLinearGradient(950, 340, 950, 418);
+                tinGrad.addColorStop(0, '#8d99ae');
+                tinGrad.addColorStop(0.45, '#6c7a89');
+                tinGrad.addColorStop(0.8, '#7f6a57');
+                tinGrad.addColorStop(1, '#566370');
+                sctx.fillStyle = tinGrad;
+                sctx.beginPath();
+                sctx.moveTo(946, 416);
+                sctx.lineTo(1015, 344);
+                sctx.lineTo(1275, 344);
+                sctx.lineTo(1344, 416);
+                sctx.closePath();
+                sctx.fill();
+
+                sctx.strokeStyle = 'rgba(40, 50, 62, 0.35)';
+                sctx.lineWidth = 1.2;
+                for (let i = 0; i <= 36; i++) {
+                    const u = i / 36;
+                    const topX = lerp(1015, 1275, u);
+                    const botX = lerp(946, 1344, u);
+                    sctx.beginPath();
+                    sctx.moveTo(topX, 344);
+                    sctx.lineTo(botX, 416);
+                    sctx.stroke();
+                }
+                sctx.strokeStyle = '#4a5568';
+                sctx.lineWidth = 4;
+                sctx.beginPath();
+                sctx.moveTo(1013, 344);
+                sctx.lineTo(1277, 344);
+                sctx.stroke();
+
+                // Galvanized metal bucket on veranda edge
+                sctx.fillStyle = '#7f8c8d';
+                sctx.beginPath();
+                sctx.moveTo(1173, 490);
+                sctx.lineTo(1189, 490);
+                sctx.lineTo(1186, 506);
+                sctx.lineTo(1176, 506);
+                sctx.closePath();
+                sctx.fill();
+                sctx.strokeStyle = '#4a5568';
+                sctx.lineWidth = 1;
+                sctx.stroke();
+
+                // Earthen Clay Stove (Mati'r Chula) with firewood sticks & aluminum pot (Hari)
+                sctx.fillStyle = '#8f6843';
+                sctx.beginPath();
+                sctx.ellipse(882, 548, 26, 12, 0, 0, Math.PI * 2);
+                sctx.fill();
+                sctx.fillStyle = '#3b2618';
+                sctx.beginPath();
+                sctx.ellipse(874, 544, 9, 5, 0, 0, Math.PI * 2);
+                sctx.fill();
+                // Firewood sticks & warm ember glow
+                sctx.strokeStyle = '#4e342e';
+                sctx.lineWidth = 2.2;
+                sctx.beginPath();
+                sctx.moveTo(868, 546);
+                sctx.lineTo(855, 552);
+                sctx.moveTo(872, 547);
+                sctx.lineTo(858, 555);
+                sctx.stroke();
+                // Rounded aluminum cooking pot (Hari) on stove
+                const potGrad = sctx.createRadialGradient(871, 533, 2, 874, 536, 11);
+                potGrad.addColorStop(0, '#d0d7de');
+                potGrad.addColorStop(1, '#6e7781');
+                sctx.fillStyle = potGrad;
+                sctx.beginPath();
+                sctx.arc(874, 536, 10, 0, Math.PI * 2);
+                sctx.fill();
+                sctx.fillStyle = '#57606a';
+                sctx.fillRect(865, 526, 18, 3);
+
+                // Cast-Iron Hand Tubewell (Chapakol)
+                sctx.fillStyle = '#7f8585';
+                sctx.beginPath();
+                sctx.ellipse(755, 576, 28, 10, 0, 0, Math.PI * 2);
+                sctx.fill();
+                sctx.strokeStyle = '#5c6363';
+                sctx.lineWidth = 1.5;
+                sctx.stroke();
+                sctx.fillStyle = '#2e5945';
+                sctx.fillRect(751, 534, 8, 42);
+                sctx.beginPath();
+                sctx.arc(755, 534, 7.5, 0, Math.PI * 2);
+                sctx.fill();
+                sctx.fillRect(742, 549, 10, 4.5);
+                sctx.strokeStyle = '#1e3d2f';
+                sctx.lineWidth = 3.2;
+                sctx.beginPath();
+                sctx.moveTo(757, 533);
+                sctx.lineTo(778, 554);
+                sctx.stroke();
+
+                // Clothes Drying Line Bamboo Posts
+                sctx.fillStyle = '#5c4228';
+                sctx.fillRect(962, 505, 5, 78);
+                sctx.fillRect(1122, 512, 5, 78);
+
+                // Brick Bathing Ghat Steps leading into the Foreground Pond (Pukur)
+                for (let step = 0; step < 6; step++) {
+                    const sy = 592 + step * 11;
+                    const sx = 695 - step * 8;
+                    const sw = 118 + step * 6;
+                    sctx.fillStyle = step % 2 === 0 ? '#9e4736' : '#853829';
+                    sctx.fillRect(sx, sy, sw, 10);
+                    sctx.strokeStyle = 'rgba(55, 25, 18, 0.35)';
+                    sctx.strokeRect(sx, sy, sw, 10);
+                }
+                sctx.fillStyle = '#7c3224';
+                sctx.beginPath();
+                sctx.moveTo(695, 582);
+                sctx.lineTo(705, 582);
+                sctx.lineTo(665, 658);
+                sctx.lineTo(652, 658);
+                sctx.closePath();
+                sctx.fill();
+                sctx.beginPath();
+                sctx.moveTo(812, 582);
+                sctx.lineTo(824, 582);
+                sctx.lineTo(848, 658);
+                sctx.lineTo(834, 658);
+                sctx.closePath();
+                sctx.fill();
+
+                // Village Tea Stall (Cha-er Dokan) under the Banyan tree
+                sctx.fillStyle = '#755638';
+                sctx.fillRect(118, 535, 145, 20);
+                sctx.fillStyle = '#593e25';
+                [125, 188, 250].forEach(px => sctx.fillRect(px, 468, 6, 70));
+                sctx.fillStyle = '#6e4929';
+                sctx.fillRect(128, 508, 72, 28);
+                sctx.fillStyle = '#855c37';
+                sctx.fillRect(206, 520, 48, 6);
+                sctx.fillRect(212, 526, 5, 14);
+                sctx.fillRect(244, 526, 5, 14);
+                sctx.fillStyle = 'rgba(230, 240, 245, 0.55)';
+                sctx.fillRect(138, 495, 10, 12);
+                sctx.fillRect(152, 495, 10, 12);
+                // Hanging banana bunch at tea stall
+                sctx.fillStyle = '#f1c40f';
+                sctx.beginPath();
+                sctx.arc(132, 482, 5, 0, Math.PI);
+                sctx.fill();
+                // Vintage 1990s Transistor Radio
+                sctx.fillStyle = '#2c2520';
+                sctx.fillRect(172, 496, 18, 12);
+                sctx.fillStyle = '#c2a675';
+                sctx.fillRect(174, 498, 10, 8);
+                sctx.strokeStyle = '#b0bec5';
+                sctx.lineWidth = 1.2;
+                sctx.beginPath();
+                sctx.moveTo(186, 496);
+                sctx.lineTo(193, 482);
+                sctx.stroke();
+                sctx.fillStyle = '#8f703b';
+                sctx.beginPath();
+                sctx.moveTo(108, 474);
+                sctx.lineTo(190, 438);
+                sctx.lineTo(270, 474);
+                sctx.closePath();
+                sctx.fill();
+
+                // Hand-Painted Bangladeshi Rickshaw
+                sctx.strokeStyle = '#2b2b2b';
+                sctx.lineWidth = 2.5;
+                sctx.beginPath();
+                sctx.arc(285, 548, 16, 0, Math.PI * 2);
+                sctx.arc(332, 548, 16, 0, Math.PI * 2);
+                sctx.stroke();
+                sctx.strokeStyle = '#d4af37';
+                sctx.lineWidth = 1;
+                sctx.beginPath();
+                sctx.arc(285, 548, 12, 0, Math.PI * 2);
+                sctx.arc(332, 548, 12, 0, Math.PI * 2);
+                sctx.stroke();
+                sctx.fillStyle = '#e63946';
+                sctx.beginPath();
+                sctx.moveTo(270, 540);
+                sctx.lineTo(265, 502);
+                sctx.quadraticCurveTo(286, 492, 302, 514);
+                sctx.lineTo(298, 540);
+                sctx.closePath();
+                sctx.fill();
+                sctx.fillStyle = '#f4d35e';
+                sctx.beginPath();
+                sctx.arc(278, 514, 5, 0, Math.PI * 2);
+                sctx.fill();
+                sctx.fillStyle = '#1d3557';
+                sctx.fillRect(272, 526, 22, 8);
+                sctx.strokeStyle = '#222';
+                sctx.lineWidth = 2;
+                sctx.beginPath();
+                sctx.moveTo(295, 542);
+                sctx.lineTo(324, 525);
+                sctx.lineTo(332, 548);
+                sctx.stroke();
+
+                // Vintage Black Bicycle leaned against bamboo fence
+                sctx.strokeStyle = '#1e2426';
+                sctx.lineWidth = 2;
+                sctx.beginPath();
+                sctx.arc(694, 512, 12, 0, Math.PI * 2);
+                sctx.arc(726, 512, 12, 0, Math.PI * 2);
+                sctx.moveTo(694, 512);
+                sctx.lineTo(708, 496);
+                sctx.lineTo(724, 496);
+                sctx.lineTo(710, 512);
+                sctx.closePath();
+                sctx.stroke();
+            }
+
+            // 3c. Warm 1990s Film Grain Tile Cache
+            const grainCanvas = createOffscreen(180, 180);
+            {
+                const gctx = grainCanvas.getContext('2d');
+                const img = gctx.createImageData(180, 180);
+                const gRng = mulberry32(1992);
+                for (let i = 0; i < img.data.length; i += 4) {
+                    const v = Math.floor(gRng() * 255);
+                    img.data[i] = v;
+                    img.data[i + 1] = Math.max(0, v - 8);
+                    img.data[i + 2] = Math.max(0, v - 22);
+                    img.data[i + 3] = 15;
+                }
+                gctx.putImageData(img, 0, 0);
+            }
+
+            // ============================================================================
+            // 4. PRE-GENERATED SCENE DATA
+            // ============================================================================
+            const stars = Array.from({ length: 85 }, () => ({
+                x: rng() * WORLD_W,
+                y: rng() * 290,
+                r: 0.7 + rng() * 1.4,
+                phase: rng() * Math.PI * 2
+            }));
+
+            const clouds = Array.from({ length: 14 }, (_, i) => ({
+                x: (i / 14) * (WORLD_W + 400) - 200,
+                y: 55 + (i % 3) * 48 + rng() * 24,
+                w: 190 + rng() * 180,
+                h: 48 + rng() * 35,
+                speed: 5 + (i % 3) * 3.5,
+                seed: rng() * 100
+            }));
+
+            const palms = [
+                { x: 645, y: 530, h: 222, lean: -28, type: 'coconut', phase: 0.4, fronds: 11 },
+                { x: 765, y: 495, h: 242, lean: -18, type: 'coconut', phase: 1.2, fronds: 12 },
+                { x: 1315, y: 495, h: 232, lean: 24, type: 'coconut', phase: 2.1, fronds: 11 },
+                { x: 1485, y: 505, h: 202, lean: 32, type: 'coconut', phase: 3.0, fronds: 10 },
+                { x: 930, y: 485, h: 196, lean: -8, type: 'betel', phase: 0.7, fronds: 9 },
+                { x: 948, y: 488, h: 210, lean: -4, type: 'betel', phase: 1.5, fronds: 9 },
+                { x: 964, y: 486, h: 186, lean: 5, type: 'betel', phase: 2.3, fronds: 9 },
+                { x: 1278, y: 485, h: 200, lean: 9, type: 'betel', phase: 3.4, fronds: 9 },
+                { x: 1296, y: 488, h: 190, lean: 14, type: 'betel', phase: 4.1, fronds: 9 }
+            ];
+
+            const bananaTrees = [
+                { x: 668, y: 564, scale: 1.08, phase: 0.5, hasMocha: true },
+                { x: 716, y: 554, scale: 0.92, phase: 1.7, hasMocha: false },
+                { x: 1358, y: 534, scale: 1.04, phase: 2.6, hasMocha: true }
+            ];
+
+            const bambooStalks = Array.from({ length: 18 }, (_, i) => ({
+                x: (i < 10 ? 1510 + (i - 5) * 9 : 590 + (i - 10) * 8),
+                y: i < 10 ? 520 : 500,
+                h: 170 + (i % 4) * 26,
+                lean: (i < 10 ? -18 : -12) + (i % 5 - 2) * 8,
+                phase: i * 0.45
+            }));
+
+            const shaplas = [
+                { x: 880, y: 695, size: 1.0, pink: true },
+                { x: 935, y: 725, size: 0.85, pink: true },
+                { x: 995, y: 685, size: 0.9, pink: false },
+                { x: 1085, y: 735, size: 1.1, pink: true },
+                { x: 1155, y: 705, size: 0.8, pink: false },
+                { x: 760, y: 730, size: 0.95, pink: true },
+                { x: 635, y: 710, size: 0.88, pink: true }
+            ];
+
+            const hyacinthClusters = [
+                { x: 560, y: 680, count: 9 },
+                { x: 1235, y: 695, count: 11 },
+                { x: 1320, y: 745, count: 8 }
+            ];
+
+            const raindrops = Array.from({ length: 280 }, (_, i) => ({
+                x: rng() * (WORLD_W + 400) - 200,
+                y: rng() * WORLD_H,
+                depth: i < 100 ? 0 : i < 210 ? 1 : 2,
+                len: 16 + (i % 3) * 10,
+                speed: 620 + (i % 3) * 240
+            }));
+
+            const ripples = Array.from({ length: 48 }, () => ({
+                x: 490 + rng() * 940,
+                y: 640 + rng() * 210,
+                r: rng() * 24,
+                maxR: 14 + rng() * 22,
+                speed: 18 + rng() * 16
+            }));
+
+            const smokePuffs = Array.from({ length: 24 }, (_, i) => ({
+                age: (i / 24),
+                seed: rng() * 100
+            }));
+
+            const fireflies = Array.from({ length: 46 }, () => ({
+                x: 120 + rng() * 1420,
+                y: 420 + rng() * 380,
+                phase: rng() * Math.PI * 2,
+                speedX: (rng() - 0.5) * 18,
+                speedY: (rng() - 0.5) * 12
+            }));
+
+            const insects = Array.from({ length: 14 }, (_, i) => ({
+                x: 250 + rng() * 1100,
+                y: 480 + rng() * 240,
+                isButterfly: i < 6,
+                color: i % 2 === 0 ? '#f4a261' : '#e9c46a',
+                phase: rng() * Math.PI * 2
+            }));
+
+            const paddyTufts = Array.from({ length: 210 }, () => {
+                const u = rng();
+                const y = lerp(460, 542, u);
+                const maxX = lerp(820, 650, u);
+                return {
+                    x: 15 + rng() * maxX,
+                    y,
+                    isGolden: rng() < 0.38,
+                    h: 11 + rng() * 7
+                };
+            });
+
+            // ============================================================================
+            // 5. DRAWING FUNCTIONS BY PARALLAX LAYER
+            // ============================================================================
+
+            function drawSkyAndAtmosphere(wctx, state) {
+                const { pal, t, sunX, sunY, sunVis, stormCloud, rainbow, nightLife, lightning } = state;
+
+                const skyGrad = wctx.createLinearGradient(0, 0, 0, 455);
+                skyGrad.addColorStop(0, `rgb(${pal.skyTop.map(Math.round).join(',')})`);
+                skyGrad.addColorStop(0.55, `rgb(${pal.skyMid.map(Math.round).join(',')})`);
+                skyGrad.addColorStop(1, `rgb(${pal.skyHor.map(Math.round).join(',')})`);
+                wctx.fillStyle = skyGrad;
+                wctx.fillRect(0, 0, WORLD_W, 460);
+
+                if (nightLife > 0.01) {
+                    wctx.save();
+                    for (const s of stars) {
+                        const tw = 0.55 + 0.45 * Math.sin(t * 3.2 + s.phase);
+                        wctx.fillStyle = `rgba(255, 248, 224, ${nightLife * tw})`;
+                        wctx.beginPath();
+                        wctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                        wctx.fill();
+                    }
+                    wctx.fillStyle = `rgba(255, 244, 212, ${nightLife * 0.9})`;
+                    wctx.beginPath();
+                    wctx.arc(1240, 110, 18, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.fillStyle = `rgb(${pal.skyTop.map(Math.round).join(',')})`;
+                    wctx.beginPath();
+                    wctx.arc(1247, 105, 16, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.restore();
+                }
+
+                if (rainbow > 0.01) {
+                    wctx.save();
+                    const rbColors = [
+                        'rgba(235, 87, 87, 0.24)',
+                        'rgba(242, 153, 74, 0.24)',
+                        'rgba(242, 201, 76, 0.24)',
+                        'rgba(111, 207, 151, 0.22)',
+                        'rgba(86, 204, 242, 0.22)',
+                        'rgba(155, 81, 224, 0.20)'
+                    ];
+                    wctx.globalAlpha = rainbow;
+                    for (let i = 0; i < rbColors.length; i++) {
+                        wctx.strokeStyle = rbColors[i];
+                        wctx.lineWidth = 6;
+                        wctx.beginPath();
+                        wctx.arc(640, 460, 390 - i * 6, Math.PI * 1.08, Math.PI * 1.92);
+                        wctx.stroke();
+                        wctx.lineWidth = 4;
+                        wctx.beginPath();
+                        wctx.arc(640, 460, 445 + i * 5, Math.PI * 1.12, Math.PI * 1.88);
+                        wctx.stroke();
+                    }
+                    wctx.restore();
+                }
+
+                if (sunVis > 0.01) {
+                    wctx.save();
+                    const sunHalo = wctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, 190);
+                    sunHalo.addColorStop(0, `rgba(255, 244, 204, ${0.92 * sunVis})`);
+                    sunHalo.addColorStop(0.22, `rgba(255, 198, 112, ${0.48 * sunVis})`);
+                    sunHalo.addColorStop(1, 'rgba(255, 165, 90, 0)');
+                    wctx.fillStyle = sunHalo;
+                    wctx.beginPath();
+                    wctx.arc(sunX, sunY, 190, 0, Math.PI * 2);
+                    wctx.fill();
+
+                    wctx.fillStyle = `rgba(255, 248, 220, ${0.95 * sunVis})`;
+                    wctx.beginPath();
+                    wctx.arc(sunX, sunY, 26, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.restore();
+                }
+
+                wctx.save();
+                for (let i = 0; i < clouds.length; i++) {
+                    const c = clouds[i];
+                    const windMult = 1 + state.wind * 2.8;
+                    const cx = ((c.x + t * c.speed * windMult) % (WORLD_W + 420)) - 210;
+                    const cy = c.y + Math.sin(t * 0.25 + c.seed) * 4;
+
+                    const topCol = lerpColor(pal.skyHor, stormCloud > 0.3 ? [72, 92, 98] : [255, 250, 240], 0.65 - stormCloud * 0.35);
+                    const botCol = lerpColor(pal.skyMid, [32, 46, 54], 0.35 + stormCloud * 0.55);
+
+                    const cGrad = wctx.createLinearGradient(cx, cy - c.h * 0.5, cx, cy + c.h * 0.5);
+                    cGrad.addColorStop(0, topCol);
+                    cGrad.addColorStop(1, botCol);
+                    wctx.fillStyle = cGrad;
+                    wctx.globalAlpha = clamp(0.55 + stormCloud * 0.38 - nightLife * 0.35, 0.18, 0.94);
+
+                    wctx.beginPath();
+                    wctx.ellipse(cx, cy, c.w * 0.5, c.h * 0.38, 0, 0, Math.PI * 2);
+                    wctx.ellipse(cx - c.w * 0.24, cy + 6, c.w * 0.34, c.h * 0.3, 0, 0, Math.PI * 2);
+                    wctx.ellipse(cx + c.w * 0.26, cy + 5, c.w * 0.36, c.h * 0.32, 0, 0, Math.PI * 2);
+                    wctx.fill();
+                }
+                wctx.restore();
+
+                if (lightning > 0.01) {
+                    wctx.save();
+                    wctx.fillStyle = `rgba(225, 245, 255, ${lightning * 0.38})`;
+                    wctx.fillRect(0, 0, WORLD_W, 450);
+                    wctx.strokeStyle = `rgba(240, 250, 255, ${lightning * 0.85})`;
+                    wctx.lineWidth = 2.2;
+                    wctx.beginPath();
+                    wctx.moveTo(420, 40);
+                    wctx.lineTo(395, 105);
+                    wctx.lineTo(415, 130);
+                    wctx.lineTo(380, 220);
+                    wctx.stroke();
+                    wctx.restore();
+                }
+            }
+
+            function drawRiverAndPaddyFields(wctx, state) {
+                const { t, pal, wind } = state;
+
+                wctx.save();
+                wctx.drawImage(horizonCanvas, 0, 175);
+                wctx.fillStyle = lerpRgba(pal.skyHor, pal.skyMid, 0.3, 0.38);
+                wctx.fillRect(0, 175, WORLD_W, 240);
+                wctx.restore();
+
+                const rivGrad = wctx.createLinearGradient(0, 392, 0, 472);
+                rivGrad.addColorStop(0, `rgb(${pal.waterTop.map(Math.round).join(',')})`);
+                rivGrad.addColorStop(1, `rgb(${pal.waterBot.map(Math.round).join(',')})`);
+                wctx.fillStyle = rivGrad;
+                wctx.fillRect(0, 395, WORLD_W, 78);
+
+                wctx.strokeStyle = lerpRgba(pal.skyHor, [255, 255, 255], 0.4, 0.28);
+                wctx.lineWidth = 1.2;
+                for (let i = 0; i < 24; i++) {
+                    const rx = ((i * 67 + t * (12 + wind * 25)) % 920);
+                    const ry = 404 + (i % 6) * 9;
+                    wctx.beginPath();
+                    wctx.moveTo(rx, ry);
+                    wctx.lineTo(rx + 18 + (i % 4) * 6, ry);
+                    wctx.stroke();
+                }
+
+                // Gliding Country Boat (Nouka) with detailed boatman (Majhi)
+                const boatX = 160 + ((t * 11.5) % 620);
+                const boatY = 428 + Math.sin(t * 2.1) * (1.5 + wind * 2.5);
+                const boatTilt = Math.sin(t * 1.8) * (0.02 + wind * 0.05);
+                wctx.save();
+                wctx.translate(boatX, boatY);
+                wctx.rotate(boatTilt);
+                wctx.fillStyle = 'rgba(20, 28, 28, 0.28)';
+                wctx.beginPath();
+                wctx.ellipse(0, 10, 42, 5.5, 0, 0, Math.PI * 2);
+                wctx.fill();
+                // Wooden curved hull with gunwale highlight
+                wctx.fillStyle = '#362214';
+                wctx.beginPath();
+                wctx.moveTo(-46, -5);
+                wctx.quadraticCurveTo(0, 12, 48, -7);
+                wctx.quadraticCurveTo(18, 3, -46, -5);
+                wctx.fill();
+                // Woven bamboo hood (Chhai) with ribs
+                const chhaiGrad = wctx.createLinearGradient(-16, -18, 20, -2);
+                chhaiGrad.addColorStop(0, '#b59052');
+                chhaiGrad.addColorStop(1, '#7a5c2b');
+                wctx.fillStyle = chhaiGrad;
+                wctx.beginPath();
+                wctx.moveTo(-16, -2);
+                wctx.quadraticCurveTo(2, -19, 22, -2);
+                wctx.closePath();
+                wctx.fill();
+                wctx.strokeStyle = '#5c421c';
+                wctx.lineWidth = 1;
+                [-8, 0, 8, 15].forEach(rx => {
+                    wctx.beginPath();
+                    wctx.moveTo(rx, -2);
+                    wctx.lineTo(rx * 0.85, -13);
+                    wctx.stroke();
+                });
+                // Majhi at stern with lungi, gamcha & boitha oar
+                wctx.fillStyle = '#7c4f32';
+                wctx.beginPath();
+                wctx.arc(-26, -15, 3.6, 0, Math.PI * 2);
+                wctx.fill();
+                wctx.fillStyle = '#e8e4d9';
+                wctx.fillRect(-29, -11, 6, 7);
+                wctx.fillStyle = '#24523b';
+                wctx.fillRect(-29, -5, 6, 4);
+                const oarAng = Math.sin(t * 3.0) * 0.28;
+                wctx.strokeStyle = '#5c3c20';
+                wctx.lineWidth = 1.6;
+                wctx.beginPath();
+                wctx.moveTo(-25, -8);
+                wctx.lineTo(-38 + Math.cos(oarAng) * 8, 10);
+                wctx.stroke();
+                wctx.restore();
+
+                // Hand Fishing Net (Khora Jal)
+                wctx.save();
+                const netLift = Math.sin(t * 0.45) * 0.18;
+                wctx.translate(565, 452);
+                wctx.rotate(netLift);
+                wctx.strokeStyle = '#5c4328';
+                wctx.lineWidth = 2;
+                wctx.beginPath();
+                wctx.moveTo(0, 0);
+                wctx.lineTo(-42, -26);
+                wctx.moveTo(0, 0);
+                wctx.lineTo(-34, -6);
+                wctx.stroke();
+                wctx.fillStyle = 'rgba(210, 225, 220, 0.22)';
+                wctx.beginPath();
+                wctx.moveTo(-8, -4);
+                wctx.lineTo(-42, -26);
+                wctx.lineTo(-34, -6);
+                wctx.closePath();
+                wctx.fill();
+                wctx.restore();
+
+                // Green & Golden Paddy Fields
+                const paddyGrad = wctx.createLinearGradient(0, 445, 760, 575);
+                paddyGrad.addColorStop(0, '#557a38');
+                paddyGrad.addColorStop(0.45, '#68933e');
+                paddyGrad.addColorStop(0.75, '#9ab046');
+                paddyGrad.addColorStop(1, '#4c7031');
+                wctx.fillStyle = paddyGrad;
+                wctx.beginPath();
+                wctx.moveTo(0, 452);
+                wctx.bezierCurveTo(310, 465, 620, 448, 920, 462);
+                wctx.lineTo(720, 560);
+                wctx.lineTo(0, 565);
+                wctx.closePath();
+                wctx.fill();
+
+                wctx.save();
+                for (let wBand = 0; wBand < 5; wBand++) {
+                    const bandX = ((wBand * 185 + t * (48 + wind * 95)) % 880) - 80;
+                    const bandGrad = wctx.createLinearGradient(bandX, 460, bandX + 95, 540);
+                    bandGrad.addColorStop(0, 'rgba(218, 202, 106, 0)');
+                    bandGrad.addColorStop(0.5, `rgba(224, 210, 112, ${0.14 + wind * 0.14})`);
+                    bandGrad.addColorStop(1, 'rgba(218, 202, 106, 0)');
+                    wctx.fillStyle = bandGrad;
+                    wctx.fillRect(bandX, 456, 95, 92);
+                }
+
+                for (const pt of paddyTufts) {
+                    const w = sampleWind(pt.x, pt.y, t, wind);
+                    const sway = w * 13;
+                    wctx.strokeStyle = pt.isGolden ? '#c9a94b' : '#5b8536';
+                    wctx.lineWidth = 1.3;
+                    wctx.beginPath();
+                    wctx.moveTo(pt.x, pt.y + 4);
+                    wctx.quadraticCurveTo(pt.x + sway * 0.4, pt.y - pt.h * 0.5, pt.x + sway, pt.y - pt.h);
+                    wctx.moveTo(pt.x + 2.5, pt.y + 4);
+                    wctx.quadraticCurveTo(pt.x + 3.5 + sway * 0.5, pt.y - pt.h * 0.45, pt.x + 4.5 + sway * 1.1, pt.y - pt.h * 0.9);
+                    wctx.stroke();
+                    if (pt.isGolden) {
+                        // Golden drooping paddy grain head (Dhaner Shish)
+                        wctx.fillStyle = '#e0c05a';
+                        wctx.beginPath();
+                        wctx.ellipse(pt.x + sway, pt.y - pt.h, 2.2, 1.1, 0.3, 0, Math.PI * 2);
+                        wctx.fill();
+                    }
+                }
+                wctx.restore();
+
+                // White Feathery Kash Flowers (Kashful) along the riverbank
+                wctx.save();
+                for (let kx = 35; kx < 520; kx += 15) {
+                    if ((kx % 45) > 30) continue;
+                    const ky = 456 + Math.sin(kx * 0.05) * 4;
+                    const sway = sampleWind(kx, ky, t, wind) * 18;
+                    wctx.strokeStyle = '#5f7842';
+                    wctx.lineWidth = 1.2;
+                    wctx.beginPath();
+                    wctx.moveTo(kx, ky + 10);
+                    wctx.quadraticCurveTo(kx + sway * 0.4, ky, kx + sway, ky - 11);
+                    wctx.stroke();
+                    wctx.fillStyle = 'rgba(248, 246, 240, 0.88)';
+                    wctx.beginPath();
+                    wctx.ellipse(kx + sway, ky - 13, 5.2, 2.4, 0.25, 0, Math.PI * 2);
+                    wctx.ellipse(kx + sway * 0.85 + 2, ky - 10, 4.0, 1.8, 0.4, 0, Math.PI * 2);
+                    wctx.fill();
+                }
+                wctx.restore();
+            }
+
+            // ============================================================================
+            // 5.3 HIGH-DETAIL BOTANICAL TREES (MANGO, JACKFRUIT, BAMBOO, PINNATE PALMS, BANANA, BANYAN)
+            // ============================================================================
+            function drawDetailedTrunkAndBranches(wctx, x, y, trunkW, trunkH, sway) {
+                // Flared root base & textured bark trunk
+                const barkGrad = wctx.createLinearGradient(x - trunkW, y - trunkH, x + trunkW, y);
+                barkGrad.addColorStop(0, '#59402b');
+                barkGrad.addColorStop(0.55, '#422e1d');
+                barkGrad.addColorStop(1, '#2b1d12');
+                wctx.fillStyle = barkGrad;
+                wctx.beginPath();
+                wctx.moveTo(x - trunkW * 1.35, y + 6);
+                wctx.quadraticCurveTo(x - trunkW * 0.7, y - trunkH * 0.5, x - trunkW * 0.55 + sway * 0.25, y - trunkH);
+                wctx.lineTo(x + trunkW * 0.55 + sway * 0.25, y - trunkH);
+                wctx.quadraticCurveTo(x + trunkW * 0.7, y - trunkH * 0.5, x + trunkW * 1.35, y + 6);
+                wctx.closePath();
+                wctx.fill();
+
+                // Primary forked boughs extending into canopy
+                wctx.strokeStyle = '#3d2a1b';
+                wctx.lineWidth = trunkW * 0.55;
+                wctx.lineCap = 'round';
+                wctx.beginPath();
+                wctx.moveTo(x + sway * 0.2, y - trunkH * 0.85);
+                wctx.quadraticCurveTo(x - 28 + sway * 0.5, y - trunkH - 18, x - 52 + sway * 0.8, y - trunkH - 36);
+                wctx.moveTo(x + sway * 0.2, y - trunkH * 0.9);
+                wctx.quadraticCurveTo(x + 26 + sway * 0.5, y - trunkH - 16, x + 48 + sway * 0.8, y - trunkH - 34);
+                wctx.stroke();
+
+                // Bark vertical crevices
+                wctx.strokeStyle = 'rgba(24, 15, 8, 0.35)';
+                wctx.lineWidth = 1.1;
+                for (let i = -1; i <= 1; i++) {
+                    wctx.beginPath();
+                    wctx.moveTo(x + i * trunkW * 0.35, y + 2);
+                    wctx.quadraticCurveTo(x + i * trunkW * 0.25, y - trunkH * 0.5, x + i * trunkW * 0.2 + sway * 0.2, y - trunkH);
+                    wctx.stroke();
+                }
+            }
+
+            function drawBackgroundTreesAndHomestead(wctx, state) {
+                const { t, wind, lantern, wetness } = state;
+
+                // 1. Mango (*Aam*) & Jackfruit (*Kathal*) Trees behind the homestead
+                wctx.save();
+                const bgTrees = [
+                    { x: 855, y: 465, trunkW: 11, trunkH: 62, sprite: mangoCanopySprite, phase: 0.3, type: 'mango' },
+                    { x: 1055, y: 435, trunkW: 14, trunkH: 76, sprite: jackfruitCanopySprite, phase: 1.4, type: 'jackfruit' },
+                    { x: 1192, y: 430, trunkW: 14, trunkH: 78, sprite: mangoCanopySprite, phase: 2.2, type: 'mango' },
+                    { x: 1388, y: 458, trunkW: 12, trunkH: 64, sprite: jackfruitCanopySprite, phase: 3.1, type: 'jackfruit' }
+                ];
+
+                for (const bt of bgTrees) {
+                    const sway = sampleWind(bt.x, bt.y, t + bt.phase, wind) * 15;
+                    drawDetailedTrunkAndBranches(wctx, bt.x, bt.y, bt.trunkW, bt.trunkH, sway);
+
+                    // Textured oblong Jackfruits (Kathal) hanging from trunk & lower boughs
+                    if (bt.type === 'jackfruit') {
+                        const jFruits = [
+                            { dx: -12, dy: -bt.trunkH * 0.58, rx: 6.5, ry: 11, rot: 0.18 },
+                            { dx: 11, dy: -bt.trunkH * 0.45, rx: 6.0, ry: 10, rot: -0.15 },
+                            { dx: -5, dy: -bt.trunkH * 0.78, rx: 5.5, ry: 9.5, rot: 0.08 }
+                        ];
+                        for (const jf of jFruits) {
+                            const jx = bt.x + jf.dx + sway * 0.2;
+                            const jy = bt.y + jf.dy;
+                            wctx.strokeStyle = '#3d2a1b';
+                            wctx.lineWidth = 1.4;
+                            wctx.beginPath();
+                            wctx.moveTo(bt.x + sway * 0.15, jy - 8);
+                            wctx.lineTo(jx, jy);
+                            wctx.stroke();
+
+                            const jfGrad = wctx.createRadialGradient(jx - 2, jy - 2, 1, jx, jy, jf.ry);
+                            jfGrad.addColorStop(0, '#a3b848');
+                            jfGrad.addColorStop(0.7, '#6d822b');
+                            jfGrad.addColorStop(1, '#445418');
+                            wctx.fillStyle = jfGrad;
+                            wctx.beginPath();
+                            wctx.ellipse(jx, jy, jf.rx, jf.ry, jf.rot, 0, Math.PI * 2);
+                            wctx.fill();
+                        }
+                    }
+
+                    // Draw multi-sub-cluster painterly foliage with slight wind rotation
+                    const topX = bt.x + sway * 0.85;
+                    const topY = bt.y - bt.trunkH - 34;
+                    wctx.save();
+                    wctx.translate(topX, topY);
+                    wctx.rotate(sway * 0.004);
+                    wctx.drawImage(bt.sprite, -bt.sprite.width * 0.52, -bt.sprite.height * 0.55);
+                    wctx.drawImage(bt.sprite, -bt.sprite.width * 0.35 + sway * 0.2, -bt.sprite.height * 0.65, bt.sprite.width * 0.78, bt.sprite.height * 0.78);
+                    wctx.restore();
+
+                    // Hanging green-gold mangoes on Mango trees
+                    if (bt.type === 'mango') {
+                        wctx.fillStyle = '#c2a83e';
+                        [[-28, -bt.trunkH - 18], [18, -bt.trunkH - 24], [38, -bt.trunkH - 10]].forEach(([mx, my]) => {
+                            wctx.beginPath();
+                            wctx.ellipse(bt.x + mx + sway * 0.9, bt.y + my, 2.6, 4.2, 0.2, 0, Math.PI * 2);
+                            wctx.fill();
+                        });
+                    }
+                }
+                wctx.restore();
+
+                // 2. Bamboo Groves (Bashjhar) with jointed culm nodes & lance-shaped leaf clusters
+                wctx.save();
+                for (const b of bambooStalks) {
+                    const sway = sampleWind(b.x, b.y, t + b.phase, wind) * 34;
+                    const tipX = b.x + b.lean + sway;
+                    const tipY = b.y - b.h + Math.abs(sway) * 0.18;
+                    const ctrlX = b.x + (b.lean + sway) * 0.45;
+                    const ctrlY = b.y - b.h * 0.55;
+
+                    // Culm stalk
+                    wctx.strokeStyle = '#5c7a3b';
+                    wctx.lineWidth = 3.2;
+                    wctx.beginPath();
+                    wctx.moveTo(b.x, b.y);
+                    wctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY);
+                    wctx.stroke();
+
+                    // Bamboo nodal rings along culm
+                    for (let u = 0.18; u < 0.9; u += 0.18) {
+                        const nx = (1 - u) * (1 - u) * b.x + 2 * (1 - u) * u * ctrlX + u * u * tipX;
+                        const ny = (1 - u) * (1 - u) * b.y + 2 * (1 - u) * u * ctrlY + u * u * tipY;
+                        wctx.strokeStyle = '#384f22';
+                        wctx.lineWidth = 1.4;
+                        wctx.beginPath();
+                        wctx.moveTo(nx - 2.5, ny);
+                        wctx.lineTo(nx + 2.5, ny);
+                        wctx.stroke();
+                    }
+
+                    // Sharp lance-shaped bamboo leaf sprays
+                    for (let u = 0.42; u <= 1.0; u += 0.14) {
+                        const lx = (1 - u) * (1 - u) * b.x + 2 * (1 - u) * u * ctrlX + u * u * tipX;
+                        const ly = (1 - u) * (1 - u) * b.y + 2 * (1 - u) * u * ctrlY + u * u * tipY;
+                        const windAng = (sway / 35) * 0.45;
+                        [-1, 1].forEach(side => {
+                            for (let bl = 0; bl < 3; bl++) {
+                                const a = side * (0.35 + bl * 0.24) + windAng;
+                                wctx.save();
+                                wctx.translate(lx, ly);
+                                wctx.rotate(a);
+                                wctx.fillStyle = bl === 1 ? '#5b8037' : '#3e5c23';
+                                wctx.beginPath();
+                                wctx.moveTo(0, 0);
+                                wctx.quadraticCurveTo(8 * side, -2.5, 16 * side, 1);
+                                wctx.quadraticCurveTo(8 * side, 2.5, 0, 0);
+                                wctx.fill();
+                                wctx.restore();
+                            }
+                        });
+                    }
+                }
+                wctx.restore();
+
+                // 3. Coconut (*Narkel*) & Betel-Nut (*Supari*) Palms with Ringed Trunks & True Pinnate Leaflets
+                wctx.save();
+                for (const p of palms) {
+                    const isBetel = p.type === 'betel';
+                    const sway = sampleWind(p.x, p.y, t + p.phase, wind) * (isBetel ? 36 : 28);
+                    const topX = p.x + p.lean + sway;
+                    const topY = p.y - p.h + Math.abs(sway) * 0.15;
+                    const ctrlX = p.x + p.lean * 0.5 + sway * 0.35;
+                    const ctrlY = p.y - p.h * 0.5;
+
+                    // Tapering curved trunk
+                    const baseW = isBetel ? 3.2 : 6.8;
+                    const topW = isBetel ? 1.8 : 3.4;
+                    wctx.fillStyle = isBetel ? '#6e624d' : '#594431';
+                    wctx.beginPath();
+                    wctx.moveTo(p.x - baseW, p.y);
+                    wctx.quadraticCurveTo(ctrlX - (baseW + topW) * 0.5, ctrlY, topX - topW, topY);
+                    wctx.lineTo(topX + topW, topY);
+                    wctx.quadraticCurveTo(ctrlX + (baseW + topW) * 0.5, ctrlY, p.x + baseW, p.y);
+                    wctx.closePath();
+                    wctx.fill();
+
+                    // Horizontal ring scars along palm trunk
+                    wctx.strokeStyle = isBetel ? 'rgba(210, 198, 175, 0.38)' : 'rgba(38, 26, 16, 0.42)';
+                    wctx.lineWidth = 1.1;
+                    const ringSteps = isBetel ? 18 : 22;
+                    for (let r = 1; r < ringSteps; r++) {
+                        const u = r / ringSteps;
+                        const rx = (1 - u) * (1 - u) * p.x + 2 * (1 - u) * u * ctrlX + u * u * topX;
+                        const ry = (1 - u) * (1 - u) * p.y + 2 * (1 - u) * u * ctrlY + u * u * topY;
+                        const rw = lerp(baseW, topW, u);
+                        wctx.beginPath();
+                        wctx.moveTo(rx - rw, ry);
+                        wctx.lineTo(rx + rw, ry);
+                        wctx.stroke();
+                    }
+
+                    // Green Crownshaft for Betel-nut or Coconut cluster at crown
+                    if (isBetel) {
+                        wctx.fillStyle = '#4e7334';
+                        wctx.fillRect(topX - 2.2, topY - 2, 4.4, 10);
+                        // Hanging orange-gold supari bunches
+                        wctx.fillStyle = '#d9822b';
+                        for (let b = -1; b <= 1; b++) {
+                            wctx.beginPath();
+                            wctx.arc(topX + b * 3.5, topY + 8, 2.5, 0, Math.PI * 2);
+                            wctx.fill();
+                        }
+                    } else {
+                        // Cluster of tender coconuts (Daab)
+                        wctx.fillStyle = '#6a7d2c';
+                        [[-5, 5], [0, 7], [5, 5], [-2, 3], [3, 3]].forEach(([cx, cy]) => {
+                            wctx.beginPath();
+                            wctx.arc(topX + cx, topY + cy, 4.2, 0, Math.PI * 2);
+                            wctx.fill();
+                        });
+                    }
+
+                    // True Pinnate Fronds with 18-22 Individual Hanging Leaflets per Frond!
+                    const fLen = isBetel ? 38 : 66;
+                    const leafletPairs = isBetel ? 12 : 18;
+                    for (let f = 0; f < p.fronds; f++) {
+                        const baseAng = -Math.PI * 1.15 + (f / (p.fronds - 1)) * Math.PI * 1.3;
+                        const windBend = (sway / 35) * 0.52;
+                        const ang = baseAng + windBend;
+                        const fx = topX + Math.cos(ang) * fLen;
+                        const fy = topY + Math.sin(ang) * fLen * 0.72 + (isBetel ? 9 : 16);
+                        const fCtrlX = (topX + fx) * 0.5;
+                        const fCtrlY = (topY + fy) * 0.5 - (isBetel ? 9 : 15);
+
+                        // Central rachis stem
+                        wctx.strokeStyle = f % 2 === 0 ? '#4d7533' : '#385924';
+                        wctx.lineWidth = isBetel ? 1.5 : 2.0;
+                        wctx.beginPath();
+                        wctx.moveTo(topX, topY);
+                        wctx.quadraticCurveTo(fCtrlX, fCtrlY, fx, fy);
+                        wctx.stroke();
+
+                        // Pinnate leaflets hanging down & blown by wind along the rachis
+                        wctx.strokeStyle = f % 2 === 0 ? '#4a7331' : '#325220';
+                        wctx.lineWidth = isBetel ? 1.0 : 1.15;
+                        wctx.beginPath();
+                        for (let k = 2; k <= leafletPairs; k++) {
+                            const u = k / (leafletPairs + 1);
+                            const lx = (1 - u) * (1 - u) * topX + 2 * (1 - u) * u * fCtrlX + u * u * fx;
+                            const ly = (1 - u) * (1 - u) * topY + 2 * (1 - u) * u * fCtrlY + u * u * fy;
+                            const leafLen = Math.sin(u * Math.PI) * (isBetel ? 10 : 16);
+                            const flutter = Math.sin(t * 7 + f + k * 0.7) * (1.2 + wind * 3.5);
+                            // Upper & lower pinnate pinnae
+                            wctx.moveTo(lx, ly);
+                            wctx.lineTo(lx + wind * 5 + flutter, ly + leafLen);
+                            wctx.moveTo(lx, ly);
+                            wctx.lineTo(lx + (fx >= topX ? 3 : -3) + flutter * 0.6, ly - leafLen * 0.45);
+                        }
+                        wctx.stroke();
+                    }
+                }
+                wctx.restore();
+
+                // Draw the cached Homestead, Courtyard, Tea Stall, Rickshaw, Ghat
+                wctx.drawImage(homesteadCanvas, 0, 0);
+
+                // Wet surface darkening during/after rain
+                if (wetness > 0.01) {
+                    wctx.save();
+                    wctx.fillStyle = `rgba(18, 28, 34, ${wetness * 0.24})`;
+                    wctx.beginPath();
+                    wctx.moveTo(0, 535);
+                    wctx.lineTo(1600, 495);
+                    wctx.lineTo(1600, 740);
+                    wctx.lineTo(0, 585);
+                    wctx.closePath();
+                    wctx.fill();
+                    wctx.fillStyle = `rgba(180, 210, 230, ${wetness * 0.14})`;
+                    wctx.beginPath();
+                    wctx.moveTo(946, 416);
+                    wctx.lineTo(1015, 344);
+                    wctx.lineTo(1275, 344);
+                    wctx.lineTo(1344, 416);
+                    wctx.closePath();
+                    wctx.fill();
+                    wctx.restore();
+                }
+
+                // 1990s Black-and-White TV Flicker Glow + Warm Window Light
+                if (lantern > 0.01 || (state.t > 18 && state.t < 88)) {
+                    wctx.save();
+                    const tvFlicker = 0.65 + 0.35 * Math.sin(t * 19.0) * Math.cos(t * 11.3);
+                    const tvAlpha = clamp(0.25 + lantern * 0.55, 0, 0.85) * tvFlicker;
+                    const tvGrad = wctx.createRadialGradient(1244, 455, 4, 1244, 455, 42);
+                    tvGrad.addColorStop(0, `rgba(210, 232, 255, ${tvAlpha})`);
+                    tvGrad.addColorStop(0.5, `rgba(145, 178, 215, ${tvAlpha * 0.55})`);
+                    tvGrad.addColorStop(1, 'rgba(120, 150, 190, 0)');
+                    wctx.fillStyle = tvGrad;
+                    wctx.fillRect(1210, 425, 68, 60);
+
+                    if (lantern > 0.05) {
+                        wctx.fillStyle = `rgba(255, 185, 85, ${lantern * 0.72})`;
+                        wctx.fillRect(846, 453, 24, 20);
+                    }
+                    wctx.restore();
+                }
+
+                // 4. Realistic Banana Plants (*Kola Gach*) with Midribs, Wind-Torn Fronds & Hanging *Mocha* Blossom
+                wctx.save();
+                for (const b of bananaTrees) {
+                    const sway = sampleWind(b.x, b.y, t + b.phase, wind) * 20;
+                    const s = b.scale;
+                    // Layered pseudostem trunk
+                    const stemGrad = wctx.createLinearGradient(b.x - 5 * s, b.y - 52 * s, b.x + 5 * s, b.y);
+                    stemGrad.addColorStop(0, '#6e9442');
+                    stemGrad.addColorStop(0.6, '#557830');
+                    stemGrad.addColorStop(1, '#435925');
+                    wctx.fillStyle = stemGrad;
+                    wctx.beginPath();
+                    wctx.moveTo(b.x - 5.5 * s, b.y);
+                    wctx.lineTo(b.x - 3.5 * s + sway * 0.12, b.y - 50 * s);
+                    wctx.lineTo(b.x + 3.5 * s + sway * 0.12, b.y - 50 * s);
+                    wctx.lineTo(b.x + 5.5 * s, b.y);
+                    wctx.closePath();
+                    wctx.fill();
+
+                    // Hanging green banana bunch (Kanchi) & purple-crimson flower bell (Mocha)
+                    if (b.hasMocha) {
+                        const mx = b.x + 6 * s + sway * 0.2;
+                        const my = b.y - 42 * s;
+                        wctx.strokeStyle = '#4e6e2a';
+                        wctx.lineWidth = 2;
+                        wctx.beginPath();
+                        wctx.moveTo(b.x + sway * 0.12, b.y - 48 * s);
+                        wctx.quadraticCurveTo(mx, my - 4, mx + 2, my + 12 * s);
+                        wctx.stroke();
+                        // Green banana tier
+                        wctx.fillStyle = '#7ea33e';
+                        wctx.beginPath();
+                        wctx.arc(mx, my + 2, 4.5 * s, 0, Math.PI * 2);
+                        wctx.fill();
+                        // Crimson-purple Mocha cone
+                        wctx.fillStyle = '#7a2848';
+                        wctx.beginPath();
+                        wctx.moveTo(mx - 2.5 * s, my + 9 * s);
+                        wctx.lineTo(mx + 4.5 * s, my + 9 * s);
+                        wctx.lineTo(mx + 1 * s, my + 18 * s);
+                        wctx.closePath();
+                        wctx.fill();
+                    }
+
+                    // Broad Banana Leaves with central yellow-green midrib and realistic wind-split segments
+                    const leafAngles = [-2.55, -2.05, -1.35, -0.75, -0.22, 0.25];
+                    for (let i = 0; i < leafAngles.length; i++) {
+                        const ang = leafAngles[i] + (sway / 28) * 0.38;
+                        wctx.save();
+                        wctx.translate(b.x + sway * 0.12, b.y - 49 * s);
+                        wctx.rotate(ang);
+
+                        const len = 38 * s;
+                        const wid = 8.5 * s;
+                        // Segmented blade with natural wind tears
+                        wctx.fillStyle = i % 2 === 0 ? '#6fa13f' : '#56822d';
+                        for (let seg = 0; seg < 4; seg++) {
+                            const sx0 = (seg / 4) * len + 3;
+                            const sx1 = ((seg + 0.9) / 4) * len + 2;
+                            wctx.beginPath();
+                            wctx.moveTo(sx0, -wid * (1 - seg * 0.15));
+                            wctx.lineTo(sx1, -wid * (1 - (seg + 1) * 0.18));
+                            wctx.lineTo(sx1 - 1, wid * (1 - (seg + 1) * 0.18));
+                            wctx.lineTo(sx0 - 1, wid * (1 - seg * 0.15));
+                            wctx.closePath();
+                            wctx.fill();
+                        }
+                        // Central pale-yellow midrib vein
+                        wctx.strokeStyle = '#b4cc66';
+                        wctx.lineWidth = 1.4 * s;
+                        wctx.beginPath();
+                        wctx.moveTo(0, 0);
+                        wctx.lineTo(len, 0);
+                        wctx.stroke();
+
+                        wctx.restore();
+                    }
+                }
+                wctx.restore();
+
+                // 5. Ancient Village Banyan Tree (*Bot Gach*) with Fluted Buttress Trunk, Braided Aerial Roots & Layered Canopy
+                wctx.save();
+                const bSway = sampleWind(95, 310, t, wind) * 14;
+
+                // Fluted buttress trunk & spreading surface roots
+                const botTrunkGrad = wctx.createLinearGradient(35, 340, 145, 555);
+                botTrunkGrad.addColorStop(0, '#543b27');
+                botTrunkGrad.addColorStop(0.5, '#3e2b1c');
+                botTrunkGrad.addColorStop(1, '#291c12');
+                wctx.fillStyle = botTrunkGrad;
+                wctx.beginPath();
+                wctx.moveTo(22, 562);
+                wctx.quadraticCurveTo(56, 520, 58, 435);
+                wctx.quadraticCurveTo(60, 365, 52 + bSway * 0.2, 325);
+                wctx.lineTo(126 + bSway * 0.2, 325);
+                wctx.quadraticCurveTo(116, 395, 122, 465);
+                wctx.quadraticCurveTo(128, 525, 152, 558);
+                wctx.closePath();
+                wctx.fill();
+
+                // Heavy spreading boughs reaching out under canopy
+                wctx.strokeStyle = '#3b2819';
+                wctx.lineWidth = 14;
+                wctx.lineCap = 'round';
+                wctx.beginPath();
+                wctx.moveTo(75 + bSway * 0.2, 340);
+                wctx.quadraticCurveTo(25 + bSway * 0.5, 305, -20 + bSway * 0.8, 290);
+                wctx.moveTo(105 + bSway * 0.2, 335);
+                wctx.quadraticCurveTo(165 + bSway * 0.5, 305, 225 + bSway * 0.85, 312);
+                wctx.moveTo(90 + bSway * 0.2, 330);
+                wctx.quadraticCurveTo(95 + bSway * 0.6, 265, 115 + bSway * 0.9, 235);
+                wctx.stroke();
+
+                // Bark ridges & moss highlights on trunk
+                wctx.strokeStyle = 'rgba(20, 12, 6, 0.45)';
+                wctx.lineWidth = 1.6;
+                [64, 78, 92, 106, 118].forEach((tx, idx) => {
+                    wctx.beginPath();
+                    wctx.moveTo(tx + (idx - 2) * 8, 555);
+                    wctx.quadraticCurveTo(tx, 445, tx + bSway * 0.15, 335);
+                    wctx.stroke();
+                });
+
+                // 11 Braided & Hanging Aerial Prop Roots (*Jhuri*) swaying at their tips
+                const aerialRoots = [
+                    { x: 18, yTop: 315, yBot: 545, w: 2.2 },
+                    { x: 32, yTop: 320, yBot: 552, w: 3.0 },
+                    { x: 44, yTop: 325, yBot: 515, w: 1.8 },
+                    { x: 128, yTop: 330, yBot: 538, w: 2.8 },
+                    { x: 142, yTop: 325, yBot: 492, w: 1.8 },
+                    { x: 156, yTop: 320, yBot: 478, w: 1.5 },
+                    { x: 174, yTop: 318, yBot: 465, w: 2.0 },
+                    { x: 192, yTop: 322, yBot: 442, w: 1.4 }
+                ];
+                for (let i = 0; i < aerialRoots.length; i++) {
+                    const ar = aerialRoots[i];
+                    const rSway = bSway * (0.45 + (i % 3) * 0.15);
+                    wctx.strokeStyle = i % 2 === 0 ? '#4f3622' : '#63452d';
+                    wctx.lineWidth = ar.w;
+                    wctx.beginPath();
+                    wctx.moveTo(ar.x + bSway * 0.5, ar.yTop);
+                    wctx.quadraticCurveTo(ar.x + rSway * 1.1, (ar.yTop + ar.yBot) * 0.5, ar.x + rSway * 0.7, ar.yBot);
+                    wctx.stroke();
+                }
+
+                // Multi-layered Painterly Banyan Canopy Sub-Clusters
+                const banyanClumps = [
+                    { sprite: banyanCanopyA, x: -75, y: 185, sc: 1.0, phase: 0.0 },
+                    { sprite: banyanCanopyB, x: 25, y: 165, sc: 1.08, phase: 0.8 },
+                    { sprite: banyanCanopyA, x: 85, y: 205, sc: 0.95, phase: 1.5 },
+                    { sprite: banyanCanopyB, x: -25, y: 135, sc: 0.96, phase: 2.1 },
+                    { sprite: banyanCanopyA, x: 45, y: 145, sc: 0.90, phase: 2.8 }
+                ];
+                for (const bc of banyanClumps) {
+                    const cSway = sampleWind(95 + bc.x, bc.y, t + bc.phase, wind) * 16;
+                    wctx.drawImage(
+                        bc.sprite,
+                        bc.x + cSway,
+                        bc.y,
+                        bc.sprite.width * bc.sc,
+                        bc.sprite.height * bc.sc
+                    );
+                }
+
+                // Stuck Paper Kite (Ghuri) in the upper right branch of the Banyan tree
+                const kiteX = 202 + bSway * 1.15;
+                const kiteY = 292 + Math.sin(t * 4.2) * (2 + wind * 5);
+                wctx.save();
+                wctx.translate(kiteX, kiteY);
+                wctx.rotate(0.45 + (bSway / 25) * 0.4);
+                wctx.fillStyle = '#e76f51';
+                wctx.beginPath();
+                wctx.moveTo(0, -14);
+                wctx.lineTo(12, 0);
+                wctx.lineTo(0, 14);
+                wctx.lineTo(-12, 0);
+                wctx.closePath();
+                wctx.fill();
+                // Bamboo spine & bow (Kathi) on kite
+                wctx.strokeStyle = '#f4d35e';
+                wctx.lineWidth = 0.9;
+                wctx.beginPath();
+                wctx.moveTo(0, -14);
+                wctx.lineTo(0, 14);
+                wctx.moveTo(-12, 0);
+                wctx.quadraticCurveTo(0, -6, 12, 0);
+                wctx.stroke();
+                wctx.fillStyle = '#f4a261';
+                wctx.beginPath();
+                wctx.moveTo(0, 14);
+                wctx.lineTo(5, 21);
+                wctx.lineTo(-5, 21);
+                wctx.closePath();
+                wctx.fill();
+                wctx.strokeStyle = 'rgba(240, 235, 220, 0.7)';
+                wctx.lineWidth = 1;
+                wctx.beginPath();
+                wctx.moveTo(0, 14);
+                wctx.quadraticCurveTo(12, 28, 6 + bSway * 0.5, 44);
+                wctx.stroke();
+                wctx.restore();
+                wctx.restore();
+
+                // Drying Line in Courtyard with detailed pleated Tant Sarees & Checkered Gamcha
+                wctx.save();
+                const sag = 8 + Math.sin(t * 3.2) * (2 + wind * 6);
+                wctx.strokeStyle = '#3d352e';
+                wctx.lineWidth = 1.3;
+                wctx.beginPath();
+                wctx.moveTo(964, 514);
+                wctx.quadraticCurveTo(1044, 518 + sag, 1124, 520);
+                wctx.stroke();
+
+                const clothesOnLine = (state.t < 41.5 || state.t > 88.0) || activeStage < 3;
+                if (clothesOnLine) {
+                    const items = [
+                        { u: 0.20, w: 40, h: 44, col: '#c0392b', border: '#f1c40f', stripe: '#922b21' },
+                        { u: 0.51, w: 38, h: 42, col: '#2471a3', border: '#f7f9f9', stripe: '#1a5276' },
+                        { u: 0.78, w: 24, h: 30, col: '#d35400', border: '#27ae60', stripe: '#a04000' }
+                    ];
+                    for (const item of items) {
+                        if (state.t > 38.5 && state.t < 41.5 && item.u > (41.5 - state.t) / 3.0) continue;
+                        const ix = lerp(964, 1124, item.u);
+                        const iy = lerp(514, 520, item.u) + Math.sin(item.u * Math.PI) * sag * 0.5;
+                        const flap = sampleWind(ix, iy, t * 1.6, wind) * 26;
+                        wctx.fillStyle = item.col;
+                        wctx.beginPath();
+                        wctx.moveTo(ix, iy);
+                        wctx.lineTo(ix + item.w, iy + 1);
+                        wctx.quadraticCurveTo(ix + item.w + flap, iy + item.h * 0.6, ix + item.w + flap * 1.2, iy + item.h);
+                        wctx.lineTo(ix + flap * 0.9, iy + item.h - 2);
+                        wctx.closePath();
+                        wctx.fill();
+                        // Woven saree folds & decorative paar border
+                        wctx.strokeStyle = item.stripe;
+                        wctx.lineWidth = 1;
+                        for (let f = 0.25; f < 0.85; f += 0.25) {
+                            wctx.beginPath();
+                            wctx.moveTo(ix + item.w * f, iy);
+                            wctx.lineTo(ix + item.w * f + flap, iy + item.h - 4);
+                            wctx.stroke();
+                        }
+                        wctx.fillStyle = item.border;
+                        wctx.beginPath();
+                        wctx.moveTo(ix + flap * 0.9, iy + item.h - 6);
+                        wctx.lineTo(ix + item.w + flap * 1.2, iy + item.h - 4);
+                        wctx.lineTo(ix + item.w + flap * 1.2, iy + item.h);
+                        wctx.lineTo(ix + flap * 0.9, iy + item.h - 2);
+                        wctx.closePath();
+                        wctx.fill();
+                    }
+                }
+                wctx.restore();
+            }
+
+            // ============================================================================
+            // 5.4 FOREGROUND POND (PUKUR), REFLECTIONS, SHAPLA, WATER HYACINTH & RIPPLES
+            // ============================================================================
+            function drawPondAndWater(wctx, state) {
+                const { t, pal, wind, rain, lantern } = state;
+
+                const pondGrad = wctx.createLinearGradient(800, 625, 800, 900);
+                pondGrad.addColorStop(0, `rgb(${pal.waterTop.map(Math.round).join(',')})`);
+                pondGrad.addColorStop(0.55, `rgb(${pal.waterBot.map(Math.round).join(',')})`);
+                pondGrad.addColorStop(1, '#0e1918');
+
+                wctx.save();
+                wctx.beginPath();
+                wctx.moveTo(350, 900);
+                wctx.bezierCurveTo(375, 650, 495, 622, 695, 636);
+                wctx.lineTo(845, 640);
+                wctx.bezierCurveTo(1080, 628, 1360, 650, 1600, 672);
+                wctx.lineTo(1600, 900);
+                wctx.closePath();
+                wctx.fillStyle = pondGrad;
+                wctx.fill();
+                wctx.clip();
+
+                for (let y = 645; y < 865; y += 7) {
+                    const wave = Math.sin(y * 0.18 - t * (2.2 + wind * 4)) * (4 + wind * 9);
+                    wctx.fillStyle = 'rgba(42, 58, 52, 0.25)';
+                    wctx.fillRect(960 + wave, y, 340, 4);
+                    if (lantern > 0.02) {
+                        wctx.fillStyle = `rgba(255, 184, 77, ${lantern * 0.28 * (1 - (y - 645) / 220)})`;
+                        wctx.fillRect(1115 + wave * 1.4, y, 42 - (y - 645) * 0.12, 4);
+                    }
+                }
+
+                wctx.strokeStyle = lerpRgba(pal.skyHor, [255, 255, 255], 0.35, 0.22 + rain * 0.28);
+                wctx.lineWidth = 1.1;
+                for (const rp of ripples) {
+                    const activeRatio = rain > 0.05 ? 1.0 : 0.35;
+                    if (rp.x % 1 > activeRatio) continue;
+                    wctx.beginPath();
+                    wctx.ellipse(rp.x, rp.y, rp.r, rp.r * 0.32, 0, 0, Math.PI * 2);
+                    wctx.stroke();
+                }
+
+                for (const hc of hyacinthClusters) {
+                    const drift = Math.sin(t * 0.8 + hc.x) * (3 + wind * 6);
+                    for (let i = 0; i < hc.count; i++) {
+                        const hx = hc.x + (i - hc.count * 0.5) * 14 + drift;
+                        const hy = hc.y + Math.sin(i * 1.9) * 9;
+                        wctx.fillStyle = '#3f6e33';
+                        wctx.beginPath();
+                        wctx.ellipse(hx, hy, 9, 5, 0.2, 0, Math.PI * 2);
+                        wctx.fill();
+                        if (i % 3 === 0) {
+                            wctx.fillStyle = '#9b72cf';
+                            wctx.beginPath();
+                            wctx.ellipse(hx, hy - 6, 3, 5, 0, 0, Math.PI * 2);
+                            wctx.fill();
+                        }
+                    }
+                }
+
+                for (const sh of shaplas) {
+                    const bob = Math.sin(t * 1.6 + sh.x * 0.05) * 2.2;
+                    const sx = sh.x + bob;
+                    const sy = sh.y + bob * 0.4;
+                    wctx.fillStyle = '#2e5930';
+                    wctx.beginPath();
+                    wctx.ellipse(sx - 6, sy + 3, 15 * sh.size, 6 * sh.size, 0, 0.2, Math.PI * 1.9);
+                    wctx.lineTo(sx - 6, sy + 3);
+                    wctx.closePath();
+                    wctx.fill();
+                    wctx.fillStyle = sh.pink ? '#e85d88' : '#f7f4ea';
+                    for (let p = -2; p <= 2; p++) {
+                        wctx.beginPath();
+                        wctx.ellipse(sx + p * 3 * sh.size, sy - 3 * sh.size, 2.6 * sh.size, 6.5 * sh.size, p * 0.25, 0, Math.PI * 2);
+                        wctx.fill();
+                    }
+                    wctx.fillStyle = '#f4d03f';
+                    wctx.beginPath();
+                    wctx.arc(sx, sy - 2, 2.2 * sh.size, 0, Math.PI * 2);
+                    wctx.fill();
+                }
+
+                wctx.restore();
+
+                const bankGrad = wctx.createLinearGradient(0, 575, 520, 900);
+                bankGrad.addColorStop(0, '#4a6b34');
+                bankGrad.addColorStop(0.5, '#355224');
+                bankGrad.addColorStop(1, '#1d2e14');
+                wctx.fillStyle = bankGrad;
+                wctx.beginPath();
+                wctx.moveTo(0, 572);
+                wctx.bezierCurveTo(250, 565, 515, 580, 655, 642);
+                wctx.bezierCurveTo(505, 695, 445, 795, 425, 900);
+                wctx.lineTo(0, 900);
+                wctx.closePath();
+                wctx.fill();
+
+                // Bamboo Fishing Pole for Kingfisher over Pond Edge
+                const poleSway = sampleWind(535, 620, t, wind) * 6;
+                wctx.strokeStyle = '#6e5534';
+                wctx.lineWidth = 2.5;
+                wctx.beginPath();
+                wctx.moveTo(505, 655);
+                wctx.quadraticCurveTo(545, 615, 582 + poleSway, 602);
+                wctx.stroke();
+
+                // Foreground Swaying Grass & Heart-shaped Taro/Arum Leaves (Kochu Pata) on lower-left bank
+                wctx.save();
+                for (let gx = 12; gx < 475; gx += 14) {
+                    const gy = 635 + (gx % 5) * 48;
+                    const sway = sampleWind(gx, gy, t, wind) * 18;
+                    wctx.strokeStyle = gx % 28 === 0 ? '#587d3b' : '#3a5725';
+                    wctx.lineWidth = 2;
+                    wctx.beginPath();
+                    wctx.moveTo(gx, gy + 24);
+                    wctx.quadraticCurveTo(gx + sway * 0.5, gy + 8, gx + sway, gy - 10);
+                    wctx.stroke();
+
+                    // Broad heart-shaped Kochu Pata (Taro leaves) along the damp pond bank
+                    if (gx % 56 === 12) {
+                        wctx.save();
+                        wctx.translate(gx + sway * 0.7, gy - 4);
+                        wctx.rotate(0.2 + sway * 0.015);
+                        wctx.fillStyle = '#3d6628';
+                        wctx.beginPath();
+                        wctx.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2);
+                        wctx.fill();
+                        wctx.strokeStyle = '#6b9445';
+                        wctx.lineWidth = 0.9;
+                        wctx.beginPath();
+                        wctx.moveTo(-8, 0);
+                        wctx.lineTo(9, 0);
+                        wctx.stroke();
+                        wctx.restore();
+                    }
+                }
+                wctx.restore();
+            }
+
+            // ============================================================================
+            // 6. STAGE 3: REALISTIC MULTI-JOINTED CHARACTERS, ATTIRE & WILDLIFE
+            // ============================================================================
+
+            // High-Detail Multi-Jointed Human Character Renderer
+            function drawPerson(wctx, opts) {
+                const {
+                    x, y, scale = 1.0, dir = 1, walkPhase = 0, isWalking = false,
+                    isSitting = false, isRunning = false, breathe = 0, wind = 0,
+                    role = 'boy', // 'grandmother' | 'mother' | 'farmer' | 'boy' | 'childGirl' | 'childBoy'
+                    armReach = 0,
+                    timeSec = 0
+                } = opts;
+
+                wctx.save();
+                wctx.translate(x, y);
+                // Slightly larger, natural 6.5-head human proportions
+                const s = scale * 1.18;
+                wctx.scale(s * dir, s);
+
+                // Soft contact ground shadow
+                wctx.fillStyle = 'rgba(15, 12, 8, 0.28)';
+                wctx.beginPath();
+                wctx.ellipse(0, 2, isSitting ? 14 : 11, 3.8, 0, 0, Math.PI * 2);
+                wctx.fill();
+
+                const skinBase = role === 'farmer' ? '#7a4b2c' : role === 'grandmother' ? '#916344' : '#8c5a3b';
+                const skinShadow = role === 'farmer' ? '#5e381f' : '#6e4329';
+
+                const strideAmp = isRunning ? 0.68 : isWalking ? 0.42 : 0;
+                const stride = Math.sin(walkPhase) * strideAmp;
+                const oppStride = -stride;
+                const kneeBendA = isWalking || isRunning ? Math.max(0, Math.cos(walkPhase)) * (isRunning ? 0.65 : 0.35) : 0;
+                const kneeBendB = isWalking || isRunning ? Math.max(0, -Math.cos(walkPhase)) * (isRunning ? 0.65 : 0.35) : 0;
+                const bob = isWalking || isRunning ? Math.abs(Math.cos(walkPhase)) * (isRunning ? 3.2 : 1.5) : 0;
+                const leanForward = isRunning ? 0.14 : isWalking ? 0.04 : 0;
+
+                const hipY = (isSitting ? -6 : -19) - bob;
+                const shoulderY = (isSitting ? -24 : -36) - bob + breathe * 0.7;
+
+                wctx.rotate(leanForward);
+
+                // Helper for 2-segment anatomical leg (hip -> knee -> ankle -> foot)
+                function drawLeg(hipX, thighAng, kneeFlex, isBack) {
+                    const thighLen = 9.5;
+                    const calfLen = 9.5;
+                    const kx = hipX + Math.sin(thighAng) * thighLen;
+                    const ky = hipY + Math.cos(thighAng) * thighLen;
+                    const totalCalfAng = thighAng - kneeFlex;
+                    const ax = kx + Math.sin(totalCalfAng) * calfLen;
+                    const ay = ky + Math.cos(totalCalfAng) * calfLen;
+
+                    wctx.strokeStyle = isBack ? skinShadow : skinBase;
+                    wctx.lineWidth = 3.6;
+                    wctx.lineCap = 'round';
+                    wctx.lineJoin = 'round';
+                    wctx.beginPath();
+                    wctx.moveTo(hipX, hipY);
+                    wctx.lineTo(kx, ky);
+                    wctx.lineTo(ax, ay);
+                    wctx.stroke();
+
+                    // Anatomical foot
+                    wctx.fillStyle = isBack ? skinShadow : skinBase;
+                    wctx.beginPath();
+                    wctx.ellipse(ax + 2.2, ay + 0.5, 4.2, 1.8, -totalCalfAng * 0.3, 0, Math.PI * 2);
+                    wctx.fill();
+                }
+
+                // Helper for 2-segment anatomical arm (shoulder -> elbow -> wrist -> hand)
+                function drawArm(shX, shY, upperAng, elbowFlex, isBack, sleeveCol) {
+                    const upperLen = 8.0;
+                    const foreLen = 7.8;
+                    const ex = shX + Math.sin(upperAng) * upperLen;
+                    const ey = shY + Math.cos(upperAng) * upperLen;
+                    const foreAng = upperAng + elbowFlex;
+                    const wx = ex + Math.sin(foreAng) * foreLen;
+                    const wy = ey + Math.cos(foreAng) * foreLen;
+
+                    // Upper sleeve
+                    if (sleeveCol) {
+                        wctx.strokeStyle = sleeveCol;
+                        wctx.lineWidth = 4.2;
+                        wctx.beginPath();
+                        wctx.moveTo(shX, shY);
+                        wctx.lineTo(lerp(shX, ex, 0.75), lerp(shY, ey, 0.75));
+                        wctx.stroke();
+                    }
+
+                    // Bare arm & forearm
+                    wctx.strokeStyle = isBack ? skinShadow : skinBase;
+                    wctx.lineWidth = 3.0;
+                    wctx.lineCap = 'round';
+                    wctx.lineJoin = 'round';
+                    wctx.beginPath();
+                    wctx.moveTo(sleeveCol ? lerp(shX, ex, 0.65) : shX, sleeveCol ? lerp(shY, ey, 0.65) : shY);
+                    wctx.lineTo(ex, ey);
+                    wctx.lineTo(wx, wy);
+                    wctx.stroke();
+
+                    // Glass bangles (Churi) on mother's wrist
+                    if (role === 'mother' && !isBack) {
+                        wctx.strokeStyle = '#e74c3c';
+                        wctx.lineWidth = 1.6;
+                        wctx.beginPath();
+                        wctx.moveTo(wx - 1.5, wy - 1);
+                        wctx.lineTo(wx + 1.5, wy - 1);
+                        wctx.stroke();
+                    }
+
+                    // Hand palm & fingers
+                    wctx.fillStyle = isBack ? skinShadow : skinBase;
+                    wctx.beginPath();
+                    wctx.ellipse(wx + Math.sin(foreAng) * 1.5, wy + Math.cos(foreAng) * 1.5, 2.2, 1.6, -foreAng, 0, Math.PI * 2);
+                    wctx.fill();
+
+                    return { wx, wy, foreAng };
+                }
+
+                const windSway = wind * -7.5 * dir;
+
+                // 1. Back Arm
+                const backArmAng = armReach !== 0 ? armReach * 0.6 : stride * 0.75;
+                const sleeveColor = role === 'boy' ? '#f8f9fa' : role === 'mother' ? '#a93226' : role === 'grandmother' ? '#f2ece1' : role === 'childGirl' ? '#e67e22' : role === 'childBoy' ? '#48c9b0' : null;
+                drawArm(-1.5, shoulderY + 2, backArmAng, 0.35, true, sleeveColor);
+
+                // 2. Legs & Lower Garments
+                if (isSitting) {
+                    if (role === 'grandmother' || role === 'mother') {
+                        // Cross-legged draped saree base on veranda / near stove
+                        wctx.fillStyle = role === 'grandmother' ? '#f2ece1' : '#e6d7c3';
+                        wctx.beginPath();
+                        wctx.moveTo(-8, shoulderY + 10);
+                        wctx.quadraticCurveTo(14, hipY - 5, 13, 1);
+                        wctx.lineTo(-9, 1);
+                        wctx.closePath();
+                        wctx.fill();
+                        // Saree decorative border (Paar) along hem
+                        wctx.fillStyle = role === 'grandmother' ? '#8c6d46' : '#c0392b';
+                        wctx.fillRect(-9, -2.5, 22, 3);
+                    } else {
+                        // Seated knees-drawn-up pose for farmer, schoolboy, and children on veranda
+                        wctx.fillStyle = role === 'farmer' ? '#24593f' : role === 'boy' ? '#1f3a60' : '#34495e';
+                        wctx.beginPath();
+                        wctx.ellipse(3, -5, 10, 5.5, 0, 0, Math.PI * 2);
+                        wctx.fill();
+                        wctx.strokeStyle = skinBase;
+                        wctx.lineWidth = 3.2;
+                        wctx.beginPath();
+                        wctx.moveTo(5, -9);
+                        wctx.lineTo(8, -1);
+                        wctx.stroke();
+                    }
+                } else {
+                    // Standing / Walking / Running Legs
+                    drawLeg(-1.5, oppStride, kneeBendB, true);
+                    drawLeg(1.5, stride, kneeBendA, false);
+
+                    if (role === 'mother') {
+                        // Draped Cotton Tant Saree Skirt with pleated Kuchi folds & Crimson Paar border
+                        wctx.fillStyle = '#e8d8c5';
+                        wctx.beginPath();
+                        wctx.moveTo(-6.5, hipY - 2);
+                        wctx.lineTo(6.5, hipY - 2);
+                        wctx.lineTo(8.5 + windSway * 0.45 + Math.sin(walkPhase) * 3, -2.5);
+                        wctx.lineTo(-7.5 + windSway * 0.45 - Math.sin(walkPhase) * 2, -2.5);
+                        wctx.closePath();
+                        wctx.fill();
+                        // Vertical kuchi pleat lines
+                        wctx.strokeStyle = 'rgba(160, 120, 95, 0.45)';
+                        wctx.lineWidth = 1;
+                        [-2, 1, 4].forEach(px => {
+                            wctx.beginPath();
+                            wctx.moveTo(px, hipY);
+                            wctx.lineTo(px + windSway * 0.35, -3);
+                            wctx.stroke();
+                        });
+                        // Deep crimson saree border (Paar) at bottom
+                        wctx.fillStyle = '#b82921';
+                        wctx.fillRect(-7.5 + windSway * 0.45, -5.5, 16, 3.2);
+                    } else if (role === 'farmer') {
+                        // Checkered Cotton Lungi (folded knee-length while working in paddy, full length when walking)
+                        const lungiBot = timeSec < 36 ? -10 - bob : -4 - bob;
+                        wctx.fillStyle = '#24593f';
+                        wctx.beginPath();
+                        wctx.moveTo(-6.5, hipY - 2);
+                        wctx.lineTo(6.5, hipY - 2);
+                        wctx.lineTo(7.8 + windSway * 0.35, lungiBot);
+                        wctx.lineTo(-7.5 + windSway * 0.35, lungiBot);
+                        wctx.closePath();
+                        wctx.fill();
+                        // Checkered grid lines on lungi
+                        wctx.strokeStyle = 'rgba(220, 235, 225, 0.28)';
+                        wctx.lineWidth = 0.9;
+                        wctx.beginPath();
+                        wctx.moveTo(-5, (hipY + lungiBot) * 0.5);
+                        wctx.lineTo(6, (hipY + lungiBot) * 0.5);
+                        wctx.moveTo(0, hipY - 2);
+                        wctx.lineTo(0 + windSway * 0.2, lungiBot);
+                        wctx.stroke();
+                    } else if (role === 'childGirl') {
+                        // Flared 1990s pleated cotton frock skirt
+                        wctx.fillStyle = '#e67e22';
+                        wctx.beginPath();
+                        wctx.moveTo(-5.5, hipY - 3);
+                        wctx.lineTo(5.5, hipY - 3);
+                        wctx.lineTo(9 + windSway * 0.3, -9 - bob);
+                        wctx.lineTo(-9 + windSway * 0.3, -9 - bob);
+                        wctx.closePath();
+                        wctx.fill();
+                        wctx.fillStyle = '#f8c471';
+                        wctx.fillRect(-8.5 + windSway * 0.3, -11 - bob, 17, 2);
+                    } else {
+                        // Navy school shorts / trousers for schoolboy & childBoy
+                        wctx.fillStyle = role === 'boy' ? '#1b3358' : '#2c3e50';
+                        wctx.beginPath();
+                        wctx.moveTo(-6, hipY - 2);
+                        wctx.lineTo(6, hipY - 2);
+                        wctx.lineTo(6.5 + Math.sin(stride) * 3, -10 - bob);
+                        wctx.lineTo(-6.5 + Math.sin(oppStride) * 3, -10 - bob);
+                        wctx.closePath();
+                        wctx.fill();
+                    }
+                }
+
+                // 3. Sculpted Torso & Upper Garments
+                if (role === 'mother') {
+                    // Fitted crimson blouse + diagonally draped Tant Saree chest pallu
+                    wctx.fillStyle = '#a93226';
+                    wctx.beginPath();
+                    wctx.moveTo(-6, shoulderY);
+                    wctx.lineTo(6, shoulderY);
+                    wctx.lineTo(5.5, hipY);
+                    wctx.lineTo(-5.5, hipY);
+                    wctx.closePath();
+                    wctx.fill();
+                    // Diagonal cream-and-crimson saree drape across torso
+                    wctx.fillStyle = '#e8d8c5';
+                    wctx.beginPath();
+                    wctx.moveTo(-6, shoulderY);
+                    wctx.lineTo(2, shoulderY);
+                    wctx.lineTo(6, hipY);
+                    wctx.lineTo(-4, hipY);
+                    wctx.closePath();
+                    wctx.fill();
+                    wctx.strokeStyle = '#b82921';
+                    wctx.lineWidth = 2.0;
+                    wctx.beginPath();
+                    wctx.moveTo(1.5, shoulderY);
+                    wctx.lineTo(5.8, hipY);
+                    wctx.stroke();
+
+                    // Flowing Saree Anchal (Pallu) billowing behind shoulder in wind
+                    const anchalWave = windSway * 1.45 + Math.sin(walkPhase * 1.3 + timeSec * 2) * 3.5;
+                    wctx.fillStyle = '#e8d8c5';
+                    wctx.beginPath();
+                    wctx.moveTo(-5, shoulderY + 1);
+                    wctx.quadraticCurveTo(-15 + anchalWave, shoulderY + 7, -21 + anchalWave * 1.25, shoulderY + 18);
+                    wctx.lineTo(-12 + anchalWave, shoulderY + 21);
+                    wctx.closePath();
+                    wctx.fill();
+                    // Crimson-and-gold decorative end stripes on the Anchal
+                    wctx.fillStyle = '#b82921';
+                    wctx.beginPath();
+                    wctx.moveTo(-21 + anchalWave * 1.25, shoulderY + 18);
+                    wctx.lineTo(-12 + anchalWave, shoulderY + 21);
+                    wctx.lineTo(-10 + anchalWave * 0.9, shoulderY + 16);
+                    wctx.lineTo(-18 + anchalWave * 1.1, shoulderY + 13);
+                    wctx.closePath();
+                    wctx.fill();
+                } else if (role === 'grandmother') {
+                    // Soft ivory-white Thaansaree / border saree wrapped warmly around torso & shoulders
+                    wctx.fillStyle = '#f2ece1';
+                    wctx.beginPath();
+                    wctx.roundRect(-7, shoulderY - 1, 14, hipY - shoulderY + 4, 4);
+                    wctx.fill();
+                    wctx.strokeStyle = '#8c6d46';
+                    wctx.lineWidth = 1.6;
+                    wctx.beginPath();
+                    wctx.moveTo(-5, shoulderY + 1);
+                    wctx.quadraticCurveTo(2, shoulderY + 8, 6, hipY);
+                    wctx.stroke();
+                } else if (role === 'farmer') {
+                    // Bare sun-bronzed muscular torso with red checkered Gamcha towel draped over shoulders
+                    wctx.fillStyle = skinBase;
+                    wctx.beginPath();
+                    wctx.moveTo(-6.5, shoulderY);
+                    wctx.lineTo(6.5, shoulderY);
+                    wctx.lineTo(5.2, hipY);
+                    wctx.lineTo(-5.2, hipY);
+                    wctx.closePath();
+                    wctx.fill();
+                    // Red Gamcha towel around neck/shoulders with white end fringe
+                    wctx.fillStyle = '#c0392b';
+                    wctx.beginPath();
+                    wctx.moveTo(-6.8, shoulderY - 1);
+                    wctx.lineTo(6.8, shoulderY - 1);
+                    wctx.lineTo(6.2, shoulderY + 6);
+                    wctx.lineTo(-6.5 + windSway * 0.4, shoulderY + 9);
+                    wctx.closePath();
+                    wctx.fill();
+                    wctx.fillStyle = '#f5f5f0';
+                    wctx.fillRect(-6.5 + windSway * 0.4, shoulderY + 8, 5, 1.8);
+                } else if (role === 'boy') {
+                    // Crisp white collared school shirt with button placket
+                    wctx.fillStyle = '#f8f9fa';
+                    wctx.beginPath();
+                    wctx.moveTo(-6, shoulderY);
+                    wctx.lineTo(6, shoulderY);
+                    wctx.lineTo(5.5, hipY);
+                    wctx.lineTo(-5.5, hipY);
+                    wctx.closePath();
+                    wctx.fill();
+                    // Shirt collar & pocket
+                    wctx.strokeStyle = '#cbd5e1';
+                    wctx.lineWidth = 1;
+                    wctx.beginPath();
+                    wctx.moveTo(-2, shoulderY);
+                    wctx.lineTo(1, shoulderY + 4);
+                    wctx.lineTo(4, shoulderY);
+                    wctx.stroke();
+                    // Cross-body cloth school bag (Jhola) when walking
+                    if (!isSitting) {
+                        const bagSway = Math.sin(walkPhase) * 2.5 + windSway * 0.4;
+                        wctx.strokeStyle = '#34495e';
+                        wctx.lineWidth = 1.8;
+                        wctx.beginPath();
+                        wctx.moveTo(3, shoulderY);
+                        wctx.lineTo(-6 + bagSway, hipY + 1);
+                        wctx.stroke();
+                        wctx.fillStyle = '#4a6984';
+                        wctx.beginPath();
+                        wctx.roundRect(-10.5 + bagSway, hipY - 2, 9.5, 8.5, 2);
+                        wctx.fill();
+                        wctx.fillStyle = '#d4ac6e';
+                        wctx.fillRect(-9 + bagSway, hipY - 2, 6.5, 2);
+                    }
+                } else {
+                    // Children's tops (pleated frock bodice for girl, striped t-shirt for boy)
+                    wctx.fillStyle = role === 'childGirl' ? '#e67e22' : '#48c9b0';
+                    wctx.beginPath();
+                    wctx.roundRect(-5.5, shoulderY, 11, hipY - shoulderY + 2, 3);
+                    wctx.fill();
+                    if (role === 'childBoy') {
+                        wctx.fillStyle = '#f4d03f';
+                        wctx.fillRect(-5.5, shoulderY + 5, 11, 2.5);
+                    }
+                }
+
+                // 4. Sculpted Neck, Head, Facial Features & Authentic Hair/Headwear
+                // Neck
+                wctx.fillStyle = skinShadow;
+                wctx.fillRect(-2, shoulderY - 4, 4, 5);
+
+                const headY = shoulderY - 9.5;
+                // Sculpted head with slight chin/jaw contour facing right (+x)
+                wctx.fillStyle = skinBase;
+                wctx.beginPath();
+                wctx.arc(0, headY, 5.8, 0, Math.PI * 2);
+                wctx.fill();
+                // Nose bridge & chin profile
+                wctx.beginPath();
+                wctx.moveTo(4.5, headY - 2.5);
+                wctx.lineTo(6.8, headY + 0.2);
+                wctx.lineTo(5.0, headY + 1.5);
+                wctx.closePath();
+                wctx.fill();
+
+                // Ear
+                wctx.fillStyle = skinShadow;
+                wctx.beginPath();
+                wctx.ellipse(-1.2, headY + 0.5, 1.3, 2.2, -0.1, 0, Math.PI * 2);
+                wctx.fill();
+                // Gold nose pin / earring stud for mother
+                if (role === 'mother') {
+                    wctx.fillStyle = '#f1c40f';
+                    wctx.beginPath();
+                    wctx.arc(-1.2, headY + 2.2, 0.9, 0, Math.PI * 2);
+                    wctx.fill();
+                }
+
+                // Expressive Eye & Eyebrow (with occasional natural blink)
+                const isBlinking = Math.sin(timeSec * 3.1 + x * 0.1) > 0.96;
+                wctx.strokeStyle = '#1a1412';
+                wctx.lineWidth = 0.9;
+                wctx.beginPath();
+                wctx.moveTo(2.0, headY - 2.4);
+                wctx.quadraticCurveTo(3.5, headY - 3.0, 4.8, headY - 2.2);
+                wctx.stroke();
+                if (!isBlinking) {
+                    wctx.fillStyle = '#14100e';
+                    wctx.beginPath();
+                    wctx.arc(3.4, headY - 0.9, 0.95, 0, Math.PI * 2);
+                    wctx.fill();
+                }
+
+                // Hair & Headwear by Character Role
+                if (role === 'mother') {
+                    // Oiled black hair swept back into a large traditional Khopa bun with red ribbon
+                    wctx.fillStyle = '#171311';
+                    wctx.beginPath();
+                    wctx.arc(-0.8, headY - 1.2, 6.0, Math.PI * 0.78, Math.PI * 2.08);
+                    wctx.fill();
+                    const bunBob = Math.sin(walkPhase) * 0.8;
+                    wctx.beginPath();
+                    wctx.arc(-7.4, headY + 0.5 + bunBob, 3.8, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.strokeStyle = '#c0392b';
+                    wctx.lineWidth = 1.2;
+                    wctx.beginPath();
+                    wctx.arc(-5.6, headY + 0.5 + bunBob, 3.2, -1.2, 1.2);
+                    wctx.stroke();
+                    // Small crimson Bindi (Tip) on forehead
+                    wctx.fillStyle = '#c0392b';
+                    wctx.beginPath();
+                    wctx.arc(5.1, headY - 2.2, 0.8, 0, Math.PI * 2);
+                    wctx.fill();
+                } else if (role === 'grandmother') {
+                    // Silver-white hair + ivory-white Saree Ghomta (head veil) draped over crown
+                    wctx.fillStyle = '#d5d1c8';
+                    wctx.beginPath();
+                    wctx.arc(-0.5, headY - 1, 5.9, Math.PI * 0.8, Math.PI * 2.1);
+                    wctx.fill();
+                    wctx.fillStyle = '#f2ece1';
+                    wctx.beginPath();
+                    wctx.arc(-1.2, headY - 0.5, 6.4, Math.PI * 0.65, Math.PI * 1.95);
+                    wctx.lineTo(-4, shoulderY + 3);
+                    wctx.lineTo(-7, shoulderY + 1);
+                    wctx.closePath();
+                    wctx.fill();
+                    wctx.strokeStyle = '#8c6d46';
+                    wctx.lineWidth = 1.2;
+                    wctx.stroke();
+                } else if (role === 'childGirl') {
+                    // Dark hair with braided pigtail (Benu) & red ribbon flying in wind
+                    wctx.fillStyle = '#171311';
+                    wctx.beginPath();
+                    wctx.arc(-0.6, headY - 1.2, 6.0, Math.PI * 0.78, Math.PI * 2.1);
+                    wctx.fill();
+                    wctx.strokeStyle = '#171311';
+                    wctx.lineWidth = 2.4;
+                    wctx.beginPath();
+                    wctx.moveTo(-5.5, headY + 1);
+                    wctx.quadraticCurveTo(-10 + windSway * 0.4, headY + 4, -12 + windSway * 0.7, headY + 8);
+                    wctx.stroke();
+                    wctx.fillStyle = '#e74c3c';
+                    wctx.beginPath();
+                    wctx.arc(-12 + windSway * 0.7, headY + 8, 1.8, 0, Math.PI * 2);
+                    wctx.fill();
+                } else {
+                    // Short dark village haircut for farmer, schoolboy & childBoy
+                    wctx.fillStyle = '#171311';
+                    wctx.beginPath();
+                    wctx.arc(-0.6, headY - 1.4, 6.0, Math.PI * 0.82, Math.PI * 2.12);
+                    wctx.fill();
+                }
+
+                // Farmer's Woven Conical Bamboo Hat (Mathal) when outdoors
+                if (role === 'farmer' && !isSitting) {
+                    const mGrad = wctx.createLinearGradient(-13, headY - 13, 13, headY - 3);
+                    mGrad.addColorStop(0, '#d8b467');
+                    mGrad.addColorStop(1, '#9c7834');
+                    wctx.fillStyle = mGrad;
+                    wctx.beginPath();
+                    wctx.moveTo(-13.5, headY - 3);
+                    wctx.quadraticCurveTo(0, headY - 14.5, 13.5, headY - 3);
+                    wctx.quadraticCurveTo(0, headY - 5, -13.5, headY - 3);
+                    wctx.fill();
+                    wctx.strokeStyle = '#6e5120';
+                    wctx.lineWidth = 1.1;
+                    wctx.stroke();
+                }
+
+                // 5. Front Arm & Hand-Held Props (Palm-leaf fan, sickle, kite spool)
+                const frontArmAng = armReach !== 0 ? armReach : -stride * 0.85;
+                const frontElbow = armReach !== 0 ? -0.45 : 0.42;
+                const handPos = drawArm(1.5, shoulderY + 2, frontArmAng, frontElbow, false, sleeveColor);
+
+                // Grandmother's hand-woven palm-leaf fan (Taler Pakha) gently waving
+                if (role === 'grandmother' && timeSec < 52) {
+                    const fanRot = Math.sin(timeSec * 4.2) * 0.35;
+                    wctx.save();
+                    wctx.translate(handPos.wx, handPos.wy);
+                    wctx.rotate(fanRot);
+                    wctx.strokeStyle = '#6e4e2a';
+                    wctx.lineWidth = 1.2;
+                    wctx.beginPath();
+                    wctx.moveTo(0, 0);
+                    wctx.lineTo(7, -5);
+                    wctx.stroke();
+                    wctx.fillStyle = '#d4b475';
+                    wctx.beginPath();
+                    wctx.arc(6, -6, 5.2, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.strokeStyle = '#a93226';
+                    wctx.lineWidth = 0.9;
+                    wctx.stroke();
+                    wctx.restore();
+                }
+
+                // Farmer's curved iron paddy-harvesting sickle (Kaste) while working in field
+                if (role === 'farmer' && timeSec < 36) {
+                    wctx.save();
+                    wctx.translate(handPos.wx, handPos.wy);
+                    wctx.strokeStyle = '#7f8c8d';
+                    wctx.lineWidth = 1.5;
+                    wctx.beginPath();
+                    wctx.arc(4, 2, 5.5, -Math.PI * 0.6, Math.PI * 0.35);
+                    wctx.stroke();
+                    wctx.restore();
+                }
+
+                // ChildBoy's wooden kite spool (Latai) when playing in daytime
+                if (role === 'childBoy' && timeSec < 35) {
+                    wctx.save();
+                    wctx.translate(handPos.wx, handPos.wy);
+                    wctx.fillStyle = '#8e5b32';
+                    wctx.beginPath();
+                    wctx.moveTo(0, -4);
+                    wctx.lineTo(4, 0);
+                    wctx.lineTo(0, 4);
+                    wctx.lineTo(-4, 0);
+                    wctx.closePath();
+                    wctx.fill();
+                    wctx.restore();
+                }
+
+                wctx.restore();
+            }
+
+            function drawCharactersAndWildlife(wctx, state) {
+                if (activeStage < 3) return;
+                const { t, wind, rain, lantern, nightLife } = state;
+                const speedMult = reducedMotion ? 0.45 : 1.0;
+                const breathe = Math.sin(t * 2.6);
+
+                // ------------------------------------------------------------------------
+                // A. DETAILED LIVESTOCK: DESHI COW, BLACK BENGAL GOAT, ROOSTER, HENS, DUCKS
+                // ------------------------------------------------------------------------
+
+                // 1. Detailed Anatomical Deshi Cow (with hump, dewlap, horns, ears & swishing tail)
+                let cowX = 1285, cowY = 552, cowDir = -1, cowWalk = 0;
+                if (t >= 42 && t < 52) {
+                    const u = smoothstep(42, 51, t);
+                    cowX = lerp(1285, 1425, u);
+                    cowY = lerp(552, 502, u);
+                    cowDir = 1;
+                    cowWalk = t * 8 * speedMult;
+                } else if (t >= 52 && t < 87) {
+                    cowX = 1425;
+                    cowY = 502;
+                    cowDir = -1;
+                }
+                wctx.save();
+                wctx.translate(cowX, cowY);
+                wctx.scale(cowDir * 1.12, 1.12);
+                // Ground shadow
+                wctx.fillStyle = 'rgba(15, 12, 8, 0.24)';
+                wctx.beginPath();
+                wctx.ellipse(0, 1, 22, 4.5, 0, 0, Math.PI * 2);
+                wctx.fill();
+                // 4 Articulated Legs with hooves
+                [-14, -8, 9, 14].forEach((lx, idx) => {
+                    const step = cowWalk ? Math.sin(cowWalk + idx * 1.5) * 4.5 : 0;
+                    wctx.strokeStyle = idx % 2 === 0 ? '#8c6b48' : '#b8946c';
+                    wctx.lineWidth = 3.0;
+                    wctx.beginPath();
+                    wctx.moveTo(lx, -12);
+                    wctx.lineTo(lx + step * 0.5, -5);
+                    wctx.lineTo(lx + step, 0);
+                    wctx.stroke();
+                    wctx.fillStyle = '#2b241d';
+                    wctx.fillRect(lx + step - 1.5, -1, 3, 2);
+                });
+                // Sculpted torso, Zebu shoulder hump & rump
+                const cowGrad = wctx.createLinearGradient(0, -28, 0, -9);
+                cowGrad.addColorStop(0, '#d8ba94');
+                cowGrad.addColorStop(0.65, '#bfa07a');
+                cowGrad.addColorStop(1, '#967653');
+                wctx.fillStyle = cowGrad;
+                wctx.beginPath();
+                wctx.moveTo(-19, -12);
+                wctx.quadraticCurveTo(-21, -24, -12, -25);
+                wctx.lineTo(5, -25);
+                wctx.quadraticCurveTo(11, -30, 15, -24); // characteristic Zebu hump
+                wctx.lineTo(18, -12);
+                wctx.quadraticCurveTo(0, -9, -19, -12);
+                wctx.fill();
+                // Swishing tail with dark tuft
+                const tailSwish = Math.sin(t * 3.8) * 4;
+                wctx.strokeStyle = '#967653';
+                wctx.lineWidth = 1.6;
+                wctx.beginPath();
+                wctx.moveTo(-19, -22);
+                wctx.quadraticCurveTo(-24 + tailSwish, -14, -22 + tailSwish, -6);
+                wctx.stroke();
+                wctx.fillStyle = '#3b2b1d';
+                wctx.beginPath();
+                wctx.ellipse(-22 + tailSwish, -5, 1.8, 3.2, 0.2, 0, Math.PI * 2);
+                wctx.fill();
+                // Dewlap fold under neck, sculpted head, ears, snout & curved horns
+                const grazeDip = (t < 40 && Math.sin(t * 0.9) > 0.2) ? 6 : 0;
+                wctx.fillStyle = '#ab8b65';
+                wctx.beginPath();
+                wctx.moveTo(12, -13);
+                wctx.quadraticCurveTo(19, -10 + grazeDip * 0.5, 21, -18 + grazeDip);
+                wctx.lineTo(14, -23 + grazeDip * 0.3);
+                wctx.closePath();
+                wctx.fill();
+                // Head & muzzle
+                wctx.fillStyle = '#c9aa84';
+                wctx.beginPath();
+                wctx.moveTo(16, -25 + grazeDip);
+                wctx.lineTo(27, -19 + grazeDip);
+                wctx.lineTo(25, -15 + grazeDip);
+                wctx.lineTo(16, -18 + grazeDip);
+                wctx.closePath();
+                wctx.fill();
+                // Dark muzzle tip & eye
+                wctx.fillStyle = '#3d3026';
+                wctx.beginPath();
+                wctx.arc(26, -17 + grazeDip, 2.0, 0, Math.PI * 2);
+                wctx.arc(20, -22 + grazeDip, 1.0, 0, Math.PI * 2);
+                wctx.fill();
+                // Drooping ear & curved horns
+                wctx.fillStyle = '#9c7c58';
+                wctx.beginPath();
+                wctx.ellipse(15, -22 + grazeDip, 3.5, 1.6, 2.4, 0, Math.PI * 2);
+                wctx.fill();
+                wctx.strokeStyle = '#4a3f35';
+                wctx.lineWidth = 1.6;
+                wctx.beginPath();
+                wctx.moveTo(17, -25 + grazeDip);
+                wctx.quadraticCurveTo(18, -32 + grazeDip, 22, -29 + grazeDip);
+                wctx.stroke();
+                wctx.restore();
+
+                // Black Bengal Goat near cow
+                const goatX = cowX - 42, goatY = cowY + 10;
+                wctx.save();
+                wctx.translate(goatX, goatY);
+                wctx.scale(cowDir * 1.1, 1.1);
+                wctx.fillStyle = '#24211e';
+                wctx.beginPath();
+                wctx.roundRect(-11, -15, 19, 9.5, 4);
+                wctx.fill();
+                // Upright goat tail, neck, head, beard & ears
+                wctx.beginPath();
+                wctx.moveTo(-10, -14);
+                wctx.lineTo(-13, -18);
+                wctx.lineTo(-8, -14);
+                wctx.fill();
+                wctx.beginPath();
+                wctx.moveTo(6, -13);
+                wctx.lineTo(13, -18);
+                wctx.lineTo(15, -14);
+                wctx.lineTo(8, -10);
+                wctx.closePath();
+                wctx.fill();
+                wctx.strokeStyle = '#24211e';
+                wctx.lineWidth = 2;
+                [-8, -4, 4, 7].forEach((lx, idx) => {
+                    const step = cowWalk ? Math.sin(cowWalk * 1.3 + idx) * 3 : 0;
+                    wctx.beginPath();
+                    wctx.moveTo(lx, -6);
+                    wctx.lineTo(lx + step, 0);
+                    wctx.stroke();
+                });
+                wctx.restore();
+
+                // 2. Detailed Rooster & Pecking Courtyard Hens
+                if (t < 43 || t > 87.5) {
+                    wctx.save();
+                    wctx.translate(792, 492);
+                    const crowTilt = (t < 15 && Math.sin(t * 1.8) > 0.35) ? -0.45 : 0;
+                    // Rust-gold body & wing feathering
+                    wctx.fillStyle = '#b8422a';
+                    wctx.beginPath();
+                    wctx.ellipse(0, -7, 8, 5.5, -0.2, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.fillStyle = '#d97828';
+                    wctx.beginPath();
+                    wctx.ellipse(2, -9, 5, 3.5, -0.5, 0, Math.PI * 2);
+                    wctx.fill();
+                    // Multi-plume iridescent dark green sickle tail
+                    wctx.strokeStyle = '#183826';
+                    wctx.lineWidth = 2.2;
+                    [-4, -1, 2].forEach(dy => {
+                        wctx.beginPath();
+                        wctx.moveTo(-6, -8);
+                        wctx.quadraticCurveTo(-15, -20 + dy, -21, -8 + dy * 1.5);
+                        wctx.stroke();
+                    });
+                    // Legs
+                    wctx.strokeStyle = '#d4ac3a';
+                    wctx.lineWidth = 1.3;
+                    wctx.beginPath();
+                    wctx.moveTo(-1, -2);
+                    wctx.lineTo(-1, 2);
+                    wctx.moveTo(2, -2);
+                    wctx.lineTo(3, 2);
+                    wctx.stroke();
+                    // Head, red comb, wattle & beak
+                    wctx.save();
+                    wctx.translate(5, -11);
+                    wctx.rotate(crowTilt);
+                    wctx.fillStyle = '#c0392b';
+                    wctx.beginPath();
+                    wctx.arc(1, -4.5, 2.8, 0, Math.PI * 2);
+                    wctx.arc(2.5, 0.5, 1.6, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.fillStyle = '#f39c12';
+                    wctx.beginPath();
+                    wctx.moveTo(3, -2.5);
+                    wctx.lineTo(7.5, -1.2);
+                    wctx.lineTo(3, 0.5);
+                    wctx.fill();
+                    wctx.restore();
+                    wctx.restore();
+
+                    for (let c = 0; c < 3; c++) {
+                        const cx = 895 + c * 28 + Math.sin(t * 1.1 + c * 2) * 12;
+                        const cy = 572 + (c % 2) * 14;
+                        const peck = Math.sin(t * 6.5 + c * 1.7) > 0.4 ? 3.5 : 0;
+                        wctx.fillStyle = c === 1 ? '#c8763e' : '#f2e8d5';
+                        wctx.beginPath();
+                        wctx.ellipse(cx, cy - 4.5, 6, 4.2, 0, 0, Math.PI * 2);
+                        wctx.arc(cx + 5.5, cy - 6.5 + peck, 2.8, 0, Math.PI * 2);
+                        wctx.fill();
+                        wctx.fillStyle = '#e67e22';
+                        wctx.fillRect(cx + 7.5, cy - 6.5 + peck, 2.5, 1.4);
+                    }
+                }
+
+                // 3. Ducks swimming on the pond
+                for (let d = 0; d < 4; d++) {
+                    const dx = 825 + d * 42 + Math.sin(t * 0.45 + d) * 65;
+                    const dy = 678 + (d % 2) * 22 + Math.cos(t * 0.9 + d) * 4;
+                    const dir = Math.cos(t * 0.45 + d) >= 0 ? 1 : -1;
+                    wctx.save();
+                    wctx.translate(dx, dy);
+                    wctx.scale(dir, 1);
+                    wctx.fillStyle = d % 2 === 0 ? '#f5f2eb' : '#8c6d53';
+                    wctx.beginPath();
+                    wctx.ellipse(0, 0, 9, 4.5, 0, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.beginPath();
+                    wctx.arc(7.5, -5.5, 3.5, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.fillStyle = '#e67e22';
+                    wctx.fillRect(10, -6.5, 4.5, 2.2);
+                    wctx.restore();
+                }
+
+                // 4. Wildlife: Doel, Kingfisher, Egrets, Insects, Frogs
+                if (rain < 0.35) {
+                    const doelHop = Math.abs(Math.sin(t * 2.5)) * 3;
+                    wctx.save();
+                    wctx.translate(820, 580 - doelHop);
+                    wctx.fillStyle = '#181c20';
+                    wctx.beginPath();
+                    wctx.ellipse(0, -4.5, 6, 3.5, -0.15, 0, Math.PI * 2);
+                    wctx.arc(5.5, -7.5, 3.0, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.fillStyle = '#f8f9fa';
+                    wctx.fillRect(-2.5, -4.5, 5.5, 2.5);
+                    wctx.strokeStyle = '#181c20';
+                    wctx.lineWidth = 2.2;
+                    wctx.beginPath();
+                    wctx.moveTo(-5.5, -5.5);
+                    wctx.lineTo(-11, -14);
+                    wctx.stroke();
+                    wctx.restore();
+                }
+
+                const poleSway = sampleWind(535, 620, t, wind) * 6;
+                wctx.save();
+                wctx.translate(582 + poleSway, 600);
+                wctx.fillStyle = '#e67e22';
+                wctx.beginPath();
+                wctx.ellipse(0, -4.5, 5, 3.5, 0.2, 0, Math.PI * 2);
+                wctx.fill();
+                wctx.fillStyle = '#00a8cc';
+                wctx.beginPath();
+                wctx.arc(2.2, -7.5, 3.5, 0, Math.PI * 2);
+                wctx.ellipse(-2.2, -5.5, 5, 2.4, 0.3, 0, Math.PI * 2);
+                wctx.fill();
+                wctx.fillStyle = '#2c3e50';
+                wctx.beginPath();
+                wctx.moveTo(4.5, -7.5);
+                wctx.lineTo(13, -4.2);
+                wctx.lineTo(4.5, -5.2);
+                wctx.closePath();
+                wctx.fill();
+                wctx.restore();
+
+                wctx.save();
+                [280, 445].forEach((ex, idx) => {
+                    wctx.fillStyle = '#f8f9fa';
+                    wctx.beginPath();
+                    wctx.ellipse(ex, 492 + idx * 14, 6.5, 3.8, -0.1, 0, Math.PI * 2);
+                    wctx.fill();
+                    wctx.strokeStyle = '#f8f9fa';
+                    wctx.lineWidth = 1.8;
+                    wctx.beginPath();
+                    wctx.moveTo(ex + 4.5, 490 + idx * 14);
+                    wctx.quadraticCurveTo(ex + 8.5, 480 + idx * 14, ex + 6.5, 475 + idx * 14);
+                    wctx.stroke();
+                });
+                if ((t > 28 && t < 46) || (t > 74 && t < 85)) {
+                    for (let b = 0; b < 3; b++) {
+                        const bx = ((t * 58 + b * 36) % (WORLD_W + 200)) - 100;
+                        const by = 165 + b * 16 + Math.sin(t * 3 + b) * 6;
+                        const flap = Math.sin(t * 9 + b * 1.4) * 7;
+                        wctx.strokeStyle = '#f4f6f7';
+                        wctx.lineWidth = 1.8;
+                        wctx.beginPath();
+                        wctx.moveTo(bx - 9, by + flap);
+                        wctx.quadraticCurveTo(bx - 3, by - 3, bx, by);
+                        wctx.quadraticCurveTo(bx + 3, by - 3, bx + 9, by + flap);
+                        wctx.stroke();
+                    }
+                }
+                wctx.restore();
+
+                if (rain < 0.1 && nightLife < 0.4) {
+                    wctx.save();
+                    for (const ins of insects) {
+                        const ix = ins.x + Math.sin(t * 1.7 + ins.phase) * 45;
+                        const iy = ins.y + Math.cos(t * 2.3 + ins.phase) * 22;
+                        const wing = Math.abs(Math.sin(t * 18 + ins.phase));
+                        if (ins.isButterfly) {
+                            wctx.fillStyle = ins.color;
+                            wctx.beginPath();
+                            wctx.ellipse(ix - 2, iy, 3.5 * wing, 2.5, -0.3, 0, Math.PI * 2);
+                            wctx.ellipse(ix + 2, iy, 3.5 * wing, 2.5, 0.3, 0, Math.PI * 2);
+                            wctx.fill();
+                        } else {
+                            wctx.strokeStyle = '#c0392b';
+                            wctx.lineWidth = 1.2;
+                            wctx.beginPath();
+                            wctx.moveTo(ix - 5, iy);
+                            wctx.lineTo(ix + 5, iy);
+                            wctx.stroke();
+                            wctx.fillStyle = 'rgba(220, 240, 255, 0.65)';
+                            wctx.beginPath();
+                            wctx.ellipse(ix, iy - 2, 5, 1.5 * wing, 0, 0, Math.PI * 2);
+                            wctx.fill();
+                        }
+                    }
+                    wctx.restore();
+                }
+
+                if (t > 73) {
+                    wctx.save();
+                    [718, 768, 804].forEach((fx, idx) => {
+                        const fy = 626 + idx * 10;
+                        const croakSac = Math.max(0, Math.sin(t * 4.5 + idx * 2.1)) * 3.2;
+                        wctx.fillStyle = '#4d6b31';
+                        wctx.beginPath();
+                        wctx.ellipse(fx, fy, 5.5, 3.8, -0.2, 0, Math.PI * 2);
+                        wctx.fill();
+                        if (croakSac > 0.3) {
+                            wctx.fillStyle = '#e8dcb5';
+                            wctx.beginPath();
+                            wctx.arc(fx + 4, fy - 1, croakSac, 0, Math.PI * 2);
+                            wctx.fill();
+                        }
+                    });
+                    wctx.restore();
+                }
+
+                // ------------------------------------------------------------------------
+                // B. THE 6 HIGH-DETAIL VILLAGE CHARACTERS ACROSS THE 90-SECOND ARC
+                // ------------------------------------------------------------------------
+
+                // 1. Grandmother (Dadi/Nani) on the veranda (Baranda)
+                drawPerson(wctx, {
+                    x: 1112,
+                    y: 500,
+                    scale: 0.96,
+                    dir: 1,
+                    isSitting: true,
+                    breathe,
+                    wind: wind * 0.25,
+                    role: 'grandmother',
+                    timeSec: t
+                });
+
+                // 2. Mother in traditional Tant Saree
+                let momX = 848, momY = 548, momDir = 1, momWalk = false, momRun = false, momSit = false, momReach = 0;
+                if (t < 35) {
+                    momX = 848;
+                    momY = 548;
+                    momSit = true;
+                    momReach = 0.85 + Math.sin(t * 2.4) * 0.22; // tending clay stove pot
+                } else if (t < 42.5) {
+                    const u = smoothstep(35, 38.5, t);
+                    momX = lerp(848, 1035, u) + (t > 38.5 ? (t - 38.5) * 18 : 0);
+                    momY = lerp(548, 560, u);
+                    momWalk = true;
+                    momReach = t > 38 ? 2.25 : 0; // reaching up to pull sarees from clothes line
+                } else if (t < 49) {
+                    const u = smoothstep(42.5, 49, t);
+                    momX = lerp(1105, 1345, u);
+                    momY = lerp(560, 520, u);
+                    momWalk = true;
+                    momRun = true;
+                } else if (t < 53.5) {
+                    const u = smoothstep(49, 53.5, t);
+                    momX = lerp(1345, 1144, u);
+                    momY = lerp(520, 502, u);
+                    momDir = -1;
+                    momWalk = true;
+                } else {
+                    momX = 1144;
+                    momY = 502;
+                    momDir = -1;
+                    momSit = true;
+                }
+                drawPerson(wctx, {
+                    x: momX,
+                    y: momY,
+                    scale: 1.0,
+                    dir: momDir,
+                    walkPhase: t * (momRun ? 10 : 6.5) * speedMult,
+                    isWalking: momWalk,
+                    isRunning: momRun,
+                    isSitting: momSit,
+                    breathe,
+                    wind,
+                    role: 'mother',
+                    armReach: momReach,
+                    timeSec: t
+                });
+
+                // 3. Schoolboy with cloth shoulder bag (Jhola)
+                if (t >= 12) {
+                    let boyX = 45, boyY = 556, boyDir = 1, boyWalk = true, boyRun = false, boySit = false;
+                    if (t < 35) {
+                        const u = clamp((t - 12) / 23, 0, 1);
+                        boyX = lerp(30, 680, u);
+                        boyY = 554 + Math.sin(boyX * 0.01) * 8;
+                        boyWalk = true;
+                    } else if (t < 45) {
+                        const u = smoothstep(35, 45, t);
+                        boyX = lerp(680, 1170, u);
+                        boyY = lerp(556, 504, u);
+                        boyWalk = true;
+                        boyRun = true;
+                    } else {
+                        boyX = 1170;
+                        boyY = 504;
+                        boyDir = -1;
+                        boyWalk = false;
+                        boySit = true;
+                    }
+                    drawPerson(wctx, {
+                        x: boyX,
+                        y: boyY,
+                        scale: 0.85,
+                        dir: boyDir,
+                        walkPhase: t * (boyRun ? 11 : 6.8) * speedMult,
+                        isWalking: boyWalk,
+                        isRunning: boyRun,
+                        isSitting: boySit,
+                        breathe,
+                        wind,
+                        role: 'boy',
+                        timeSec: t
+                    });
+                }
+
+                // 4. Farmer in checkered lungi, red gamcha & bamboo mathal hat
+                let farmX = 365, farmY = 515, farmDir = 1, farmWalk = false, farmSit = false, farmReach = 0;
+                if (t < 36) {
+                    farmX = 365 + Math.sin(t * 0.35) * 28;
+                    farmY = 515;
+                    farmReach = 0.75 + Math.sin(t * 2.4) * 0.35;
+                } else if (t < 49) {
+                    const u = smoothstep(36, 49, t);
+                    farmX = lerp(380, 1085, u);
+                    farmY = lerp(548, 502, u);
+                    farmWalk = true;
+                } else {
+                    farmX = 1085;
+                    farmY = 502;
+                    farmSit = true;
+                }
+                drawPerson(wctx, {
+                    x: farmX,
+                    y: farmY,
+                    scale: 1.02,
+                    dir: farmDir,
+                    walkPhase: t * 7.5 * speedMult,
+                    isWalking: farmWalk,
+                    isSitting: farmSit,
+                    breathe,
+                    wind,
+                    role: 'farmer',
+                    armReach: farmReach,
+                    timeSec: t
+                });
+
+                // 5 & 6. Two Village Children (girl in pleated frock & boy with kite spool)
+                for (let k = 0; k < 2; k++) {
+                    let kx = 545 + k * 36, ky = 562, kDir = k === 0 ? 1 : -1, kWalk = false, kRun = false, kSit = false;
+                    if (t < 35) {
+                        kx = 545 + k * 42 + Math.sin(t * 1.8 + k * 3) * 16;
+                        ky = 562 + k * 6;
+                        kWalk = Math.abs(Math.cos(t * 1.8 + k * 3)) > 0.3;
+                    } else if (t < 46) {
+                        const u = smoothstep(35 + k * 1.2, 45 + k * 0.8, t);
+                        kx = lerp(555 + k * 35, 1188 + k * 19, u);
+                        ky = lerp(564, 504, u);
+                        kDir = 1;
+                        kWalk = true;
+                        kRun = true;
+                    } else {
+                        kx = 1188 + k * 19;
+                        ky = 504;
+                        kDir = -1;
+                        kSit = true;
+                    }
+                    drawPerson(wctx, {
+                        x: kx,
+                        y: ky,
+                        scale: 0.76,
+                        dir: kDir,
+                        walkPhase: t * (kRun ? 12.5 : 7.0) * speedMult + k,
+                        isWalking: kWalk,
+                        isRunning: kRun,
+                        isSitting: kSit,
+                        breathe,
+                        wind,
+                        role: k === 0 ? 'childGirl' : 'childBoy',
+                        timeSec: t
+                    });
+                }
+
+                // Hurricane Lantern (Hariken) on the Veranda
+                wctx.save();
+                const lanX = 1128, lanY = 500;
+                wctx.fillStyle = '#3b2f2f';
+                wctx.fillRect(lanX - 4, lanY - 2, 8, 3);
+                wctx.fillRect(lanX - 3, lanY - 13, 6, 2);
+                wctx.strokeStyle = '#4a3c3c';
+                wctx.lineWidth = 1.2;
+                wctx.beginPath();
+                wctx.ellipse(lanX, lanY - 7, 4.5, 5.5, 0, 0, Math.PI * 2);
+                wctx.stroke();
+
+                if (lantern > 0.01) {
+                    const flicker = 0.92 + 0.08 * Math.sin(t * 17.0);
+                    wctx.fillStyle = `rgba(255, 240, 170, ${lantern})`;
+                    wctx.beginPath();
+                    wctx.ellipse(lanX, lanY - 6, 2.2, 3.8 * flicker, 0, 0, Math.PI * 2);
+                    wctx.fill();
+
+                    const glow = wctx.createRadialGradient(lanX, lanY - 8, 4, lanX, lanY - 8, 135 * flicker);
+                    glow.addColorStop(0, `rgba(255, 196, 92, ${0.52 * lantern})`);
+                    glow.addColorStop(0.45, `rgba(245, 148, 62, ${0.24 * lantern})`);
+                    glow.addColorStop(1, 'rgba(235, 120, 40, 0)');
+                    wctx.globalCompositeOperation = 'screen';
+                    wctx.fillStyle = glow;
+                    wctx.beginPath();
+                    wctx.arc(lanX, lanY - 8, 135, 0, Math.PI * 2);
+                    wctx.fill();
+                }
+                wctx.restore();
+            }
+
+            // ============================================================================
+            // 7. STAGE 2 WEATHER PARTICLES: MIST, STOVE SMOKE, RAIN, ROOF DRIPS, FIREFLIES
+            // ============================================================================
+            function drawWeatherAndLightOverlays(wctx, state, dt) {
+                if (activeStage < 2) return;
+                const { t, pal, mist, sunX, sunY, godRays, wind, rain, stormCloud, nightLife, stoveSmoke } = state;
+
+                if (godRays > 0.01) {
+                    wctx.save();
+                    wctx.globalCompositeOperation = 'screen';
+                    for (let r = 0; r < 7; r++) {
+                        const ang = 0.38 + r * 0.13 + Math.sin(t * 0.25 + r) * 0.02;
+                        const rayGrad = wctx.createLinearGradient(sunX, sunY, sunX + Math.cos(ang) * 780, sunY + Math.sin(ang) * 780);
+                        rayGrad.addColorStop(0, `rgba(255, 224, 158, ${0.14 * godRays})`);
+                        rayGrad.addColorStop(0.65, `rgba(255, 205, 130, ${0.05 * godRays})`);
+                        rayGrad.addColorStop(1, 'rgba(255, 190, 110, 0)');
+                        wctx.fillStyle = rayGrad;
+                        wctx.beginPath();
+                        wctx.moveTo(sunX - 18, sunY);
+                        wctx.lineTo(sunX + Math.cos(ang - 0.04) * 900, sunY + Math.sin(ang - 0.04) * 900);
+                        wctx.lineTo(sunX + Math.cos(ang + 0.04) * 900, sunY + Math.sin(ang + 0.04) * 900);
+                        wctx.closePath();
+                        wctx.fill();
+                    }
+                    wctx.restore();
+                }
+
+                if (mist > 0.01) {
+                    wctx.save();
+                    for (let m = 0; m < 4; m++) {
+                        const my = 445 + m * 58;
+                        const mx = ((t * (8 + m * 3)) % 400) - 200;
+                        const mGrad = wctx.createLinearGradient(0, my - 28, 0, my + 34);
+                        mGrad.addColorStop(0, 'rgba(252, 236, 214, 0)');
+                        mGrad.addColorStop(0.5, `rgba(252, 236, 214, ${mist * (0.26 - m * 0.03)})`);
+                        mGrad.addColorStop(1, 'rgba(252, 236, 214, 0)');
+                        wctx.fillStyle = mGrad;
+                        wctx.fillRect(mx, my - 28, WORLD_W + 400, 64);
+                    }
+                    wctx.restore();
+                }
+
+                if (stoveSmoke > 0.01) {
+                    wctx.save();
+                    for (const sp of smokePuffs) {
+                        sp.age = (sp.age + dt * 0.22) % 1.0;
+                        const u = sp.age;
+                        const sx = 874 + u * (24 + wind * 85) + Math.sin(u * 8 + sp.seed) * 9;
+                        const sy = 528 - u * 115;
+                        const rad = 5 + u * 22;
+                        const alpha = Math.sin(u * Math.PI) * 0.26 * stoveSmoke;
+                        wctx.fillStyle = `rgba(232, 224, 212, ${alpha})`;
+                        wctx.beginPath();
+                        wctx.arc(sx, sy, rad, 0, Math.PI * 2);
+                        wctx.fill();
+                    }
+                    wctx.restore();
+                }
+
+                if (stormCloud > 0.2 && rain < 0.5) {
+                    wctx.save();
+                    wctx.fillStyle = '#5c4b28';
+                    for (let l = 0; l < 18; l++) {
+                        const lx = ((t * (190 + l * 15) + l * 97) % WORLD_W);
+                        const ly = 360 + ((l * 53) % 280) + Math.sin(t * 5 + l) * 24;
+                        wctx.save();
+                        wctx.translate(lx, ly);
+                        wctx.rotate(t * 6 + l);
+                        wctx.beginPath();
+                        wctx.ellipse(0, 0, 4.5, 2, 0, 0, Math.PI * 2);
+                        wctx.fill();
+                        wctx.restore();
+                    }
+                    wctx.restore();
+                }
+
+                if (rain > 0.01) {
+                    wctx.save();
+                    const slantX = 95 + wind * 140;
+
+                    for (const rp of ripples) {
+                        rp.r += dt * rp.speed * (0.6 + rain * 0.8);
+                        if (rp.r > rp.maxR) rp.r = 0.5;
+                    }
+
+                    for (const rd of raindrops) {
+                        const speed = rd.speed * (reducedMotion ? 0.55 : 1.0);
+                        rd.y += dt * speed;
+                        rd.x += dt * slantX * (0.7 + rd.depth * 0.2);
+                        if (rd.y > WORLD_H) {
+                            rd.y = -20;
+                            rd.x = ((rd.x % (WORLD_W + 400)) + (WORLD_W + 400)) % (WORLD_W + 400) - 200;
+                        }
+                        const alpha = (0.16 + rd.depth * 0.11) * rain;
+                        wctx.strokeStyle = `rgba(205, 224, 238, ${alpha})`;
+                        wctx.lineWidth = 0.9 + rd.depth * 0.45;
+                        wctx.beginPath();
+                        wctx.moveTo(rd.x, rd.y);
+                        wctx.lineTo(rd.x + slantX * 0.035, rd.y + rd.len);
+                        wctx.stroke();
+                    }
+
+                    wctx.strokeStyle = `rgba(200, 222, 238, ${0.38 * rain})`;
+                    wctx.lineWidth = 1.3;
+                    for (let rx = 958; rx <= 1332; rx += 22) {
+                        const streamLen = 22 + Math.sin(t * 14 + rx) * 8;
+                        wctx.beginPath();
+                        wctx.moveTo(rx, 416);
+                        wctx.lineTo(rx + wind * 8, 416 + streamLen);
+                        wctx.stroke();
+                    }
+
+                    const dripCycle = (t * 3.4) % 1.0;
+                    const dripY = lerp(416, 491, dripCycle * dripCycle);
+                    wctx.fillStyle = `rgba(220, 240, 255, ${0.85 * rain})`;
+                    wctx.beginPath();
+                    wctx.ellipse(1181, dripY, 1.6, 3.4, 0, 0, Math.PI * 2);
+                    wctx.fill();
+                    if (dripCycle > 0.82) {
+                        const sR = (dripCycle - 0.82) * 35;
+                        wctx.strokeStyle = `rgba(225, 242, 255, ${(1 - (dripCycle - 0.82) * 5.5) * rain})`;
+                        wctx.lineWidth = 1.1;
+                        wctx.beginPath();
+                        wctx.ellipse(1181, 491, sR, sR * 0.35, 0, 0, Math.PI * 2);
+                        wctx.stroke();
+                    }
+
+                    wctx.restore();
+                }
+
+                if (pal.shadowAlpha > 0.02) {
+                    wctx.save();
+                    wctx.fillStyle = `rgba(14, 22, 38, ${pal.shadowAlpha})`;
+                    wctx.fillRect(0, 0, WORLD_W, WORLD_H);
+                    wctx.restore();
+                }
+
+                if (nightLife > 0.01) {
+                    wctx.save();
+                    wctx.globalCompositeOperation = 'screen';
+                    for (const ff of fireflies) {
+                        ff.x = ((ff.x + dt * ff.speedX) + WORLD_W) % WORLD_W;
+                        ff.y = clamp(ff.y + Math.sin(t * 1.8 + ff.phase) * dt * 12, 390, 820);
+                        const pulse = Math.pow(0.5 + 0.5 * Math.sin(t * 3.6 + ff.phase), 2.2) * nightLife;
+                        if (pulse < 0.05) continue;
+
+                        const ffGlow = wctx.createRadialGradient(ff.x, ff.y, 0.5, ff.x, ff.y, 14);
+                        ffGlow.addColorStop(0, `rgba(235, 255, 130, ${pulse * 0.95})`);
+                        ffGlow.addColorStop(0.4, `rgba(180, 235, 65, ${pulse * 0.45})`);
+                        ffGlow.addColorStop(1, 'rgba(140, 210, 40, 0)');
+                        wctx.fillStyle = ffGlow;
+                        wctx.beginPath();
+                        wctx.arc(ff.x, ff.y, 14, 0, Math.PI * 2);
+                        wctx.fill();
+                    }
+                    wctx.restore();
+                }
+            }
+
+            // ============================================================================
+            // 8. STAGE 4: BENGALI TITLE CARD & WARM 1990s FILM FINISH (GRAIN + VIGNETTE)
+            // ============================================================================
+            function drawFilmFinishAndTitle(ctxScreen, w, h, state) {
+                const { t } = state;
+
+                ctxScreen.save();
+                const vig = ctxScreen.createRadialGradient(w * 0.5, h * 0.5, Math.min(w, h) * 0.34, w * 0.5, h * 0.5, Math.max(w, h) * 0.75);
+                vig.addColorStop(0, 'rgba(28, 18, 10, 0)');
+                vig.addColorStop(0.7, 'rgba(22, 14, 8, 0.14)');
+                vig.addColorStop(1, 'rgba(10, 7, 5, 0.56)');
+                ctxScreen.fillStyle = vig;
+                ctxScreen.fillRect(0, 0, w, h);
+
+                if (activeStage === 4 && !reducedMotion) {
+                    const ox = Math.floor((t * 24) % 9) * 19;
+                    const oy = Math.floor((t * 17) % 9) * 23;
+                    const pat = ctxScreen.createPattern(grainCanvas, 'repeat');
+                    if (pat) {
+                        ctxScreen.translate(ox, oy);
+                        ctxScreen.fillStyle = pat;
+                        ctxScreen.fillRect(-ox, -oy, w + 180, h + 180);
+                        ctxScreen.translate(-ox, -oy);
+                    }
+                }
+                ctxScreen.restore();
+
+                if (t > 0.6 && t < 9.0) {
+                    const alpha = smoothstep(0.6, 2.4, t) * (1.0 - smoothstep(6.8, 8.8, t));
+                    ctxScreen.save();
+                    ctxScreen.globalAlpha = alpha;
+                    ctxScreen.textAlign = 'center';
+                    ctxScreen.textBaseline = 'middle';
+
+                    const cx = w * 0.5;
+                    const cy = h * 0.24;
+                    const titleSize = clamp(Math.min(w, h) * 0.056, 26, 48);
+
+                    ctxScreen.shadowColor = 'rgba(24, 14, 6, 0.72)';
+                    ctxScreen.shadowBlur = 16;
+                    ctxScreen.shadowOffsetY = 3;
+
+                    ctxScreen.fillStyle = '#fff5e1';
+                    ctxScreen.font = `600 ${titleSize}px "Noto Serif Bengali", "SolaimanLipi", "Bangla Sangam MN", Georgia, serif`;
+                    ctxScreen.fillText('ফেলে আসা গ্রাম', cx, cy);
+
+                    ctxScreen.shadowBlur = 6;
+                    ctxScreen.strokeStyle = 'rgba(245, 203, 134, 0.82)';
+                    ctxScreen.lineWidth = 2;
+                    ctxScreen.beginPath();
+                    ctxScreen.moveTo(cx - titleSize * 2.1, cy + titleSize * 0.65);
+                    ctxScreen.quadraticCurveTo(cx, cy + titleSize * 0.78, cx + titleSize * 2.1, cy + titleSize * 0.62);
+                    ctxScreen.stroke();
+
+                    ctxScreen.font = `400 ${Math.round(titleSize * 0.36)}px -apple-system, BlinkMacSystemFont, "Segoe UI", serif`;
+                    ctxScreen.fillStyle = 'rgba(255, 238, 208, 0.88)';
+                    ctxScreen.fillText('A 1990s Bengali Village Memory', cx, cy + titleSize * 1.15);
+                    ctxScreen.restore();
+                }
+            }
+
+            // ============================================================================
+            // 9. STAGE 4: PROCEDURAL WEB AUDIO SYNTHESIZER (OFF UNTIL FIRST TAP)
+            // ============================================================================
+            let audioCtx = null;
+            let isMuted = true;
+            let masterGain = null;
+            let windGain = null;
+            let windFilter = null;
+            let rainGain = null;
+            let padGain = null;
+            let nextBirdTime = 0;
+            let nextCricketTime = 0;
+            let nextDripTime = 0;
+            let lastThunderTrigger = -10;
+
+            function initAudioEngine() {
+                if (audioCtx) return;
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                audioCtx = new AC();
+
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = 0.01;
+                masterGain.connect(audioCtx.destination);
+
+                const bufLen = audioCtx.sampleRate * 3;
+                const noiseBuf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+                const data = noiseBuf.getChannelData(0);
+                let b0 = 0, b1 = 0, b2 = 0;
+                for (let i = 0; i < bufLen; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.997 * b0 + white * 0.029;
+                    b1 = 0.985 * b1 + white * 0.032;
+                    b2 = 0.950 * b2 + white * 0.048;
+                    data[i] = (b0 + b1 + b2 + white * 0.12) * 0.35;
+                }
+
+                const windSrc = audioCtx.createBufferSource();
+                windSrc.buffer = noiseBuf;
+                windSrc.loop = true;
+                windFilter = audioCtx.createBiquadFilter();
+                windFilter.type = 'bandpass';
+                windFilter.frequency.value = 260;
+                windFilter.Q.value = 2.4;
+                windGain = audioCtx.createGain();
+                windGain.gain.value = 0.04;
+                windSrc.connect(windFilter).connect(windGain).connect(masterGain);
+                windSrc.start();
+
+                const rainSrc = audioCtx.createBufferSource();
+                rainSrc.buffer = noiseBuf;
+                rainSrc.loop = true;
+                const rainFilter = audioCtx.createBiquadFilter();
+                rainFilter.type = 'bandpass';
+                rainFilter.frequency.value = 1350;
+                rainFilter.Q.value = 0.7;
+                rainGain = audioCtx.createGain();
+                rainGain.gain.value = 0.0;
+                rainSrc.connect(rainFilter).connect(rainGain).connect(masterGain);
+                rainSrc.start();
+
+                padGain = audioCtx.createGain();
+                padGain.gain.value = 0.065;
+                const padFilter = audioCtx.createBiquadFilter();
+                padFilter.type = 'lowpass';
+                padFilter.frequency.value = 480;
+                padFilter.connect(padGain).connect(masterGain);
+
+                [146.83, 220.0, 293.66, 369.99].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const oGain = audioCtx.createGain();
+                    osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+                    osc.frequency.value = freq;
+                    oGain.gain.value = idx === 3 ? 0.12 : 0.25;
+                    osc.connect(oGain).connect(padFilter);
+                    osc.start();
+                });
+            }
+
+            function triggerBirdCall(now) {
+                if (!audioCtx || isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sine';
+                const base = 1480 + Math.random() * 520;
+                osc.frequency.setValueAtTime(base, now);
+                osc.frequency.exponentialRampToValueAtTime(base * 1.28, now + 0.11);
+                osc.frequency.exponentialRampToValueAtTime(base * 0.92, now + 0.26);
+                g.gain.setValueAtTime(0.001, now);
+                g.gain.linearRampToValueAtTime(0.032, now + 0.04);
+                g.gain.exponentialRampToValueAtTime(0.0008, now + 0.28);
+                osc.connect(g).connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+
+            function triggerBucketDrip(now) {
+                if (!audioCtx || isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(620, now);
+                osc.frequency.exponentialRampToValueAtTime(1180, now + 0.065);
+                g.gain.setValueAtTime(0.001, now);
+                g.gain.linearRampToValueAtTime(0.038, now + 0.01);
+                g.gain.exponentialRampToValueAtTime(0.0008, now + 0.08);
+                osc.connect(g).connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 0.09);
+            }
+
+            function triggerCricketOrFrog(now, isFrog) {
+                if (!audioCtx || isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                if (isFrog) {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(165, now);
+                    osc.frequency.linearRampToValueAtTime(215, now + 0.14);
+                    g.gain.setValueAtTime(0.001, now);
+                    g.gain.linearRampToValueAtTime(0.028, now + 0.04);
+                    g.gain.exponentialRampToValueAtTime(0.0008, now + 0.18);
+                    osc.connect(g).connect(masterGain);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(4150 + Math.random() * 200, now);
+                    g.gain.setValueAtTime(0.001, now);
+                    g.gain.linearRampToValueAtTime(0.014, now + 0.03);
+                    g.gain.exponentialRampToValueAtTime(0.0008, now + 0.12);
+                    osc.connect(g).connect(masterGain);
+                    osc.start(now);
+                    osc.stop(now + 0.13);
+                }
+            }
+
+            function triggerThunder(now) {
+                if (!audioCtx || isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(72, now);
+                osc.frequency.exponentialRampToValueAtTime(34, now + 1.8);
+                const lpf = audioCtx.createBiquadFilter();
+                lpf.type = 'lowpass';
+                lpf.frequency.value = 140;
+                g.gain.setValueAtTime(0.001, now);
+                g.gain.linearRampToValueAtTime(0.09, now + 0.18);
+                g.gain.exponentialRampToValueAtTime(0.001, now + 2.1);
+                osc.connect(lpf).connect(g).connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 2.2);
+            }
+
+            function updateAudioSoundscape(state) {
+                if (!audioCtx || isMuted) return;
+                const now = audioCtx.currentTime;
+                const { t, wind, rain, lightning, nightLife } = state;
+
+                windFilter.frequency.setTargetAtTime(210 + wind * 460, now, 0.15);
+                windGain.gain.setTargetAtTime(0.025 + wind * 0.14, now, 0.15);
+                rainGain.gain.setTargetAtTime(rain * 0.22, now, 0.2);
+
+                if (t < 34 && now > nextBirdTime) {
+                    triggerBirdCall(now);
+                    nextBirdTime = now + 1.4 + Math.random() * 2.4;
+                }
+                if (lightning > 0.5 && t - lastThunderTrigger > 4.0) {
+                    triggerThunder(now);
+                    lastThunderTrigger = t;
+                }
+                if (rain > 0.25 && now > nextDripTime) {
+                    triggerBucketDrip(now);
+                    nextDripTime = now + 0.55 + Math.random() * 0.35;
+                }
+                if (nightLife > 0.2 && now > nextCricketTime) {
+                    triggerCricketOrFrog(now, Math.random() < 0.28);
+                    nextCricketTime = now + 0.22 + Math.random() * 0.45;
+                }
+            }
+
+            function toggleAudio() {
+                initAudioEngine();
+                if (!audioCtx) return;
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                isMuted = !isMuted;
+                const now = audioCtx.currentTime;
+                masterGain.gain.setTargetAtTime(isMuted ? 0.0001 : 0.85, now, 0.12);
+
+                const btn = document.getElementById('audio-btn');
+                const icon = document.getElementById('audio-icon');
+                const label = document.getElementById('audio-label');
+                if (isMuted) {
+                    btn.classList.remove('playing');
+                    icon.textContent = '🔇';
+                    label.textContent = 'Muted';
+                } else {
+                    btn.classList.add('playing');
+                    icon.textContent = '🔊';
+                    label.textContent = 'Sound On';
+                }
+            }
+
+            function suspendAudioOnHide() {
+                if (audioCtx && audioCtx.state === 'running') {
+                    audioCtx.suspend();
+                }
+            }
+            function resumeAudioOnShow() {
+                if (audioCtx && !isMuted && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+
+            let firstTapHandled = false;
+            function handleFirstInteraction() {
+                if (!firstTapHandled) {
+                    firstTapHandled = true;
+                    if (isMuted) toggleAudio();
+                }
+            }
+            canvas.addEventListener('pointerdown', handleFirstInteraction);
+            document.getElementById('audio-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                firstTapHandled = true;
+                toggleAudio();
+            });
+
+            // ============================================================================
+            // 10. UI CONTROLS, SCRUBBER, STAGE SELECTOR & IDLE FADE
+            // ============================================================================
+            const actLabelEl = document.getElementById('act-label');
+            const timeLabelEl = document.getElementById('time-label');
+            const progressFillEl = document.getElementById('progress-fill');
+            const progressTrackEl = document.getElementById('progress-track');
+
+            function formatTime(sec) {
+                const s = Math.floor(sec % 90);
+                const m = Math.floor(s / 60);
+                const rem = s % 60;
+                return `${m}:${rem < 10 ? '0' : ''}${rem}`;
+            }
+
+            function getActName(t) {
+                if (t < 15) return '১ · ভোর — Morning Mist & Clay Stove (0–15s)';
+                if (t < 35) return '২ · দুপুর — Schoolboy, Paddy Fields & Nouka (15–35s)';
+                if (t < 55) return '৩ · কালবৈশাখী — Nor’wester Wind & Gathering Home (35–55s)';
+                if (t < 75) return '৪ · বর্ষা — Monsoon Rain & Veranda Lantern (55–75s)';
+                return '৫ · মেঘভাঙা সন্ধ্যা — Rainbow, Golden Hour & Fireflies (75–90s)';
+            }
+
+            function updateHUD(t) {
+                actLabelEl.textContent = getActName(t);
+                timeLabelEl.textContent = `${formatTime(t)} / 1:30`;
+                progressFillEl.style.width = `${(t / DURATION) * 100}%`;
+            }
+
+            function scrubFromEvent(e) {
+                const rect = progressTrackEl.getBoundingClientRect();
+                const u = clamp((e.clientX - rect.left) / rect.width, 0, 0.999);
+                filmTime = u * DURATION;
+                updateHUD(filmTime);
+            }
+
+            progressTrackEl.addEventListener('pointerdown', (e) => {
+                isScrubbing = true;
+                progressTrackEl.setPointerCapture(e.pointerId);
+                scrubFromEvent(e);
+            });
+            progressTrackEl.addEventListener('pointermove', (e) => {
+                if (isScrubbing) scrubFromEvent(e);
+            });
+            progressTrackEl.addEventListener('pointerup', () => {
+                isScrubbing = false;
+            });
+
+            document.querySelectorAll('.stage-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeStage = parseInt(btn.dataset.stage, 10);
+                });
+            });
+
+            let idleTimer = null;
+            function resetIdle() {
+                document.body.classList.remove('idle');
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    document.body.classList.add('idle');
+                }, 3200);
+            }
+            window.addEventListener('pointermove', resetIdle);
+            window.addEventListener('pointerdown', resetIdle);
+            resetIdle();
+
+            window.__setFilmState = (timeSec, stageNum = 4) => {
+                filmTime = timeSec;
+                activeStage = stageNum;
+                updateHUD(filmTime);
+            };
+
+            // ============================================================================
+            // 11. MAIN 60FPS ANIMATION LOOP & RESPONSIVE PORTRAIT/LANDSCAPE CAMERA
+            // ============================================================================
+            const sceneCanvas = createOffscreen(WORLD_W, WORLD_H);
+            const sctx = sceneCanvas.getContext('2d', { alpha: false });
+
+            function renderFrame(now) {
+                requestAnimationFrame(renderFrame);
+                if (isPaused) return;
+
+                const dt = clamp((now - lastTimestamp) / 1000, 0.001, 0.1);
+                lastTimestamp = now;
+
+                if (!isScrubbing) {
+                    filmTime = (filmTime + dt) % DURATION;
+                }
+
+                const state = computeWorldState(filmTime);
+                updateHUD(state.t);
+                updateAudioSoundscape(state);
+
+                drawSkyAndAtmosphere(sctx, state);
+                drawRiverAndPaddyFields(sctx, state);
+                drawBackgroundTreesAndHomestead(sctx, state);
+                drawPondAndWater(sctx, state);
+                drawCharactersAndWildlife(sctx, state);
+                drawWeatherAndLightOverlays(sctx, state, dt);
+
+                ctx.save();
+                ctx.scale(dpr, dpr);
+
+                const aspect = viewW / viewH;
+                const worldAspect = WORLD_W / WORLD_H;
+
+                let scale, camCenterX, camCenterY;
+                if (aspect >= worldAspect) {
+                    scale = Math.max(viewW / WORLD_W, viewH / WORLD_H) * (reducedMotion ? 1.0 : 1.035);
+                    const halfVisW = (viewW / scale) * 0.5;
+                    const halfVisH = (viewH / scale) * 0.5;
+                    const targetX = WORLD_W * 0.5 + (reducedMotion ? 0 : Math.sin(state.t * 0.14) * 18);
+                    camCenterX = clamp(targetX, halfVisW, WORLD_W - halfVisW);
+                    camCenterY = clamp(WORLD_H * 0.5, halfVisH, WORLD_H - halfVisH);
+                } else {
+                    scale = (viewH / WORLD_H) * 1.02;
+                    let focusX = 980;
+                    if (state.t < 15) focusX = lerp(880, 960, state.t / 15);
+                    else if (state.t < 35) focusX = lerp(420, 780, (state.t - 15) / 20);
+                    else if (state.t < 55) focusX = lerp(980, 1180, (state.t - 35) / 20);
+                    else if (state.t < 75) focusX = 1080;
+                    else focusX = lerp(1040, 880, (state.t - 75) / 15);
+
+                    const halfVisW = (viewW / scale) * 0.5;
+                    const halfVisH = (viewH / scale) * 0.5;
+                    camCenterX = clamp(focusX, halfVisW, WORLD_W - halfVisW);
+                    camCenterY = clamp(WORLD_H * 0.51, halfVisH, WORLD_H - halfVisH);
+                }
+
+                const drawW = WORLD_W * scale;
+                const drawH = WORLD_H * scale;
+                const offsetX = viewW * 0.5 - camCenterX * scale;
+                const offsetY = viewH * 0.5 - camCenterY * scale;
+
+                ctx.drawImage(sceneCanvas, offsetX, offsetY, drawW, drawH);
+
+                drawFilmFinishAndTitle(ctx, viewW, viewH, state);
+
+                ctx.restore();
+            }
+
+            requestAnimationFrame(renderFrame);
+        })();
+    </script>
+</body>
+
+</html>
