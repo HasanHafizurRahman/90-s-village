@@ -109,13 +109,33 @@
             border: 1px solid rgba(226, 169, 82, 0.45);
         }
 
+        #actions-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #azan-btn {
+            background: rgba(16, 14, 11, 0.58);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(244, 235, 217, 0.2);
+            padding: 6px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #f4ebd9;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+        }
+
         #audio-btn {
             background: rgba(16, 14, 11, 0.58);
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
             border: 1px solid rgba(244, 235, 217, 0.18);
             padding: 6px 14px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 7px;
             font-size: 12px;
@@ -186,27 +206,297 @@
             background: rgba(13, 12, 10, 0.55);
         }
 
-        @media (max-width: 640px) {
+        /* Default Desktop: Hide mobile labels and show full desktop labels */
+        .stage-label-mobile,
+        .ctrl-label-short,
+        .audio-label-short,
+        .mobile-only {
+            display: none !important;
+        }
+
+        .stage-label-full,
+        .ctrl-label-full,
+        .audio-label-full {
+            display: inline;
+        }
+
+        /* Mobile & Tablet Portrait Optimized Experience */
+        @media (max-width: 768px) {
+            .stage-label-full,
+            .ctrl-label-full,
+            .audio-label-full {
+                display: none !important;
+            }
+
+            .stage-label-mobile,
+            .ctrl-label-short,
+            .audio-label-short {
+                display: inline !important;
+            }
+
+            .mobile-only {
+                display: inline-flex !important;
+            }
+
             #top-bar {
-                top: 10px;
-                left: 10px;
-                right: 10px;
+                top: max(8px, env(safe-area-inset-top));
+                left: max(8px, env(safe-area-inset-left));
+                right: max(8px, env(safe-area-inset-right));
+                gap: 5px;
+                flex-wrap: nowrap;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .pill-group {
+                flex-wrap: nowrap;
+                gap: 3px;
+                padding: 3px;
+                background: rgba(16, 14, 11, 0.72);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid rgba(244, 235, 217, 0.18);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+                flex-shrink: 0;
             }
 
             .stage-btn {
-                font-size: 10.5px;
-                padding: 4px 8px;
+                font-size: 11px;
+                padding: 4px 7px;
+                border-radius: 999px;
+                white-space: nowrap;
+            }
+
+            #actions-group {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                flex-shrink: 0;
+            }
+
+            .ctrl-btn {
+                padding: 5px 9px;
+                font-size: 11px;
+                border-radius: 999px;
+                background: rgba(16, 14, 11, 0.72);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid rgba(244, 235, 217, 0.18);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                white-space: nowrap;
+                color: #f4ebd9;
+            }
+
+            #azan-btn {
+                padding: 5px 9px;
+                font-size: 11px;
             }
 
             #audio-btn {
+                padding: 5px 9px;
                 font-size: 11px;
-                padding: 5px 11px;
             }
 
             #bottom-bar {
-                bottom: 8px;
-                left: 10px;
-                right: 10px;
+                bottom: max(8px, env(safe-area-inset-bottom));
+                left: max(8px, env(safe-area-inset-left));
+                right: max(8px, env(safe-area-inset-right));
+                gap: 6px;
+                background: rgba(16, 14, 11, 0.68);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 7px 10px 9px;
+                border-radius: 14px;
+                border: 1px solid rgba(244, 235, 217, 0.14);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+            }
+
+            .meta-row {
+                font-size: 10.5px;
+                gap: 6px;
+            }
+
+            #act-label {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                flex: 1;
+                min-width: 0;
+            }
+
+            #time-label {
+                flex-shrink: 0;
+                font-variant-numeric: tabular-nums;
+                color: #ffd996;
+            }
+
+            #progress-track {
+                height: 7px;
+                position: relative;
+            }
+
+            #progress-track::after {
+                content: '';
+                position: absolute;
+                top: -12px;
+                bottom: -12px;
+                left: 0;
+                right: 0;
+            }
+
+            #mobile-landmarks {
+                position: fixed;
+                bottom: max(68px, calc(env(safe-area-inset-bottom) + 68px));
+                left: max(8px, env(safe-area-inset-left));
+                right: max(8px, env(safe-area-inset-right));
+                display: flex;
+                gap: 6px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                pointer-events: auto;
+                padding: 2px 0;
+                z-index: 10;
+            }
+
+            #mobile-landmarks::-webkit-scrollbar {
+                display: none;
+            }
+
+            .landmark-chip {
+                appearance: none;
+                border: 1px solid rgba(244, 235, 217, 0.18);
+                background: rgba(16, 14, 11, 0.72);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                color: rgba(244, 235, 217, 0.88);
+                font-size: 10.5px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                white-space: nowrap;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+
+            .landmark-chip:active {
+                background: rgba(226, 169, 82, 0.35);
+                color: #ffe0a3;
+                border-color: rgba(226, 169, 82, 0.6);
+                transform: scale(0.96);
+            }
+
+            #mobile-audio-hint {
+                position: fixed;
+                top: calc(max(8px, env(safe-area-inset-top)) + 46px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(20, 16, 12, 0.88);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid rgba(226, 169, 82, 0.45);
+                color: #ffe0a3;
+                font-size: 11px;
+                padding: 6px 14px;
+                border-radius: 999px;
+                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+                pointer-events: auto;
+                white-space: nowrap;
+                transition: opacity 0.5s ease, transform 0.5s ease;
+                animation: pulseHint 2.8s infinite ease-in-out;
+                z-index: 12;
+            }
+
+            @keyframes pulseHint {
+                0%, 100% { opacity: 0.95; transform: translateX(-50%) scale(1); }
+                50% { opacity: 0.75; transform: translateX(-50%) scale(0.98); }
+            }
+
+            #mobile-tip {
+                position: fixed;
+                top: calc(max(8px, env(safe-area-inset-top)) + 46px);
+                right: max(8px, env(safe-area-inset-right));
+                background: rgba(20, 16, 12, 0.82);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                border: 1px solid rgba(244, 235, 217, 0.18);
+                color: rgba(244, 235, 217, 0.85);
+                font-size: 10px;
+                padding: 4px 8px 4px 10px;
+                border-radius: 999px;
+                pointer-events: auto;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: opacity 0.4s ease;
+                z-index: 11;
+            }
+
+            #close-tip-btn {
+                background: transparent;
+                border: none;
+                color: rgba(244, 235, 217, 0.6);
+                font-size: 14px;
+                line-height: 1;
+                cursor: pointer;
+                padding: 0 2px;
+            }
+        }
+
+        @media (max-width: 390px) {
+            .stage-sep,
+            .stage-label-mobile {
+                display: none !important;
+            }
+
+            .stage-btn {
+                padding: 4px 7px;
+                font-size: 11px;
+                min-width: 24px;
+                text-align: center;
+            }
+
+            #top-bar {
+                gap: 4px;
+            }
+
+            #actions-group {
+                gap: 4px;
+            }
+
+            .ctrl-btn {
+                padding: 5px 8px;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            #top-bar {
+                top: max(4px, env(safe-area-inset-top));
+                left: max(8px, env(safe-area-inset-left));
+                right: max(8px, env(safe-area-inset-right));
+            }
+
+            #bottom-bar {
+                bottom: max(4px, env(safe-area-inset-bottom));
+                left: max(8px, env(safe-area-inset-left));
+                right: max(8px, env(safe-area-inset-right));
+                padding: 4px 8px;
+            }
+
+            #mobile-landmarks,
+            #mobile-tip,
+            #mobile-audio-hint {
+                display: none !important;
+            }
+
+            .stage-btn,
+            .ctrl-btn {
+                padding: 3px 7px;
+                font-size: 10px;
             }
         }
     </style>
@@ -218,27 +508,54 @@
 
         <div id="top-bar" class="hud hud-fade">
             <div class="pill-group" role="group" aria-label="Build Stages">
-                <button class="stage-btn" data-stage="1" title="Stage 1: Environment & Parallax Only">1 ·
-                    Environment</button>
-                <button class="stage-btn" data-stage="2" title="Stage 2: + Time-of-Day & Weather">2 · Weather &amp;
-                    Light</button>
-                <button class="stage-btn" data-stage="3" title="Stage 3: + Characters & Wildlife">3 ·
-                    Characters</button>
-                <button class="stage-btn active" data-stage="4" title="Stage 4: Complete Film with Audio & Polish">4 ·
-                    Full Film</button>
+                <button class="stage-btn" data-stage="1" title="Stage 1: Environment & Parallax Only">
+                    <span class="stage-num">1</span><span class="stage-sep"> · </span><span class="stage-label-full">Environment</span><span class="stage-label-mobile">Env</span>
+                </button>
+                <button class="stage-btn" data-stage="2" title="Stage 2: + Time-of-Day & Weather">
+                    <span class="stage-num">2</span><span class="stage-sep"> · </span><span class="stage-label-full">Weather &amp; Light</span><span class="stage-label-mobile">Light</span>
+                </button>
+                <button class="stage-btn" data-stage="3" title="Stage 3: + Characters & Wildlife">
+                    <span class="stage-num">3</span><span class="stage-sep"> · </span><span class="stage-label-full">Characters</span><span class="stage-label-mobile">Chars</span>
+                </button>
+                <button class="stage-btn active" data-stage="4" title="Stage 4: Complete Film with Audio & Polish">
+                    <span class="stage-num">4</span><span class="stage-sep"> · </span><span class="stage-label-full">Full Film</span><span class="stage-label-mobile">Film</span>
+                </button>
             </div>
-            <div style="display:flex; gap:8px; align-items:center;">
+            <div id="actions-group">
+                <button id="view-mode-btn" class="ctrl-btn mobile-only" type="button" title="Toggle Full Village Panorama / Zoom Focus">
+                    <span id="view-mode-icon">🖼️</span>
+                    <span id="view-mode-label" class="ctrl-label-short">Full</span>
+                </button>
                 <button id="azan-btn" class="ctrl-btn" type="button"
-                    title="Hear the distant unamplified village Azan across the fields"
-                    style="background:rgba(16,14,11,0.58); border:1px solid rgba(244,235,217,0.2); padding:6px 12px; display:flex; align-items:center; gap:6px; font-size:12px; color:#f4ebd9; backdrop-filter:blur(6px);">
-                    <span>🕌</span>
-                    <span id="azan-label">Distant Azan</span>
+                    title="Hear the distant unamplified village Azan across the fields">
+                    <span class="ctrl-icon">🕌</span>
+                    <span id="azan-label" class="ctrl-label-full">Distant Azan</span>
+                    <span id="azan-label-mobile" class="ctrl-label-short">Azan</span>
                 </button>
                 <button id="audio-btn" class="ctrl-btn playing" type="button" aria-label="Toggle Sound">
                     <span id="audio-icon">🔊</span>
-                    <span id="audio-label">Sound Active · Tap Village</span>
+                    <span id="audio-label" class="audio-label-full">Sound Active · Tap Village</span>
+                    <span id="audio-label-mobile" class="audio-label-short">Sound</span>
                 </button>
             </div>
+        </div>
+
+        <div id="mobile-landmarks" class="hud hud-fade mobile-only">
+            <button class="landmark-chip" data-x="220" title="Tea Stall & Radio">☕ চায়ের দোকান</button>
+            <button class="landmark-chip" data-x="480" title="Distant Mosque & Nouka">🕌 মসজিদ</button>
+            <button class="landmark-chip" data-x="755" title="Courtyard & Tubewell">💧 চাপাকল</button>
+            <button class="landmark-chip" data-x="880" title="Homestead & Clay Stove">🏡 উঠোন</button>
+            <button class="landmark-chip" data-x="1080" title="Pond & Water Lilies">🪷 পদ্মপুকুর</button>
+            <button class="landmark-chip" data-x="1380" title="Cattle Shed & Fields">🐄 গোয়ালঘর</button>
+        </div>
+
+        <div id="mobile-tip" class="hud mobile-only">
+            <span>📱 ঘুরালে পূর্ণ প্যানোরামা · Rotate for Cinema</span>
+            <button id="close-tip-btn" aria-label="Dismiss">&times;</button>
+        </div>
+
+        <div id="mobile-audio-hint" class="hud mobile-only">
+            <span>🎧 স্পর্শ করে শব্দ চালু করুন · Tap for audio</span>
         </div>
 
         <div id="bottom-bar" class="hud hud-fade">
@@ -3810,12 +4127,13 @@
 
                 // Update Top Bar HUD Button Badge
                 const azanBtn = document.getElementById('azan-label');
-                if (azanBtn) {
-                    azanBtn.textContent = 'Azan Calling...';
-                    setTimeout(() => {
-                        if (azanBtn) azanBtn.textContent = 'Distant Azan';
-                    }, AZAN_MAX_DURATION * 1000);
-                }
+                const azanBtnMobile = document.getElementById('azan-label-mobile');
+                if (azanBtn) azanBtn.textContent = 'Azan Calling...';
+                if (azanBtnMobile) azanBtnMobile.textContent = 'Calling...';
+                setTimeout(() => {
+                    if (azanBtn) azanBtn.textContent = 'Distant Azan';
+                    if (azanBtnMobile) azanBtnMobile.textContent = 'Azan';
+                }, AZAN_MAX_DURATION * 1000);
 
                 // Primary Path: High-Fidelity Web Audio API Buffer (with distance low-pass, panning & open-air reverb)
                 if (audioCtx && azanAudioBuffer) {
@@ -4214,15 +4532,26 @@
                 const btn = document.getElementById('audio-btn');
                 const icon = document.getElementById('audio-icon');
                 const label = document.getElementById('audio-label');
+                const labelMobile = document.getElementById('audio-label-mobile');
                 if (!btn) return;
                 if (isMuted) {
                     btn.classList.remove('playing');
                     icon.textContent = '🔇';
-                    label.textContent = 'Muted';
+                    if (label) label.textContent = 'Muted';
+                    if (labelMobile) labelMobile.textContent = 'Muted';
                 } else {
                     btn.classList.add('playing');
                     icon.textContent = '🔊';
-                    label.textContent = 'Sound Active · Tap Village';
+                    if (label) label.textContent = 'Sound Active · Tap Village';
+                    if (labelMobile) labelMobile.textContent = 'Sound';
+                }
+            }
+
+            function dismissMobileAudioHint() {
+                const hint = document.getElementById('mobile-audio-hint');
+                if (hint) {
+                    hint.style.opacity = '0';
+                    setTimeout(() => { try { hint.remove(); } catch (_) { } }, 500);
                 }
             }
 
@@ -4235,6 +4564,7 @@
 
             function toggleAudio() {
                 ensureAudioUnlocked();
+                dismissMobileAudioHint();
                 if (!audioCtx) return;
                 isMuted = !isMuted;
                 const now = audioCtx.currentTime;
@@ -4279,6 +4609,7 @@
             loadAzanAudioBuffer();
             ['pointerdown', 'pointermove', 'touchstart', 'keydown'].forEach(evt => {
                 window.addEventListener(evt, () => {
+                    dismissMobileAudioHint();
                     if (!audioCtx) {
                         initAudioEngine();
                         if (filmTime < 15 || filmTime > 74) triggerUnamplifiedAzan(0.2);
@@ -4299,6 +4630,7 @@
                     e.stopPropagation();
                     isMuted = false;
                     ensureAudioUnlocked();
+                    dismissMobileAudioHint();
                     updateAudioButtonUI();
                     stopCurrentAzan();
                     azanActiveUntil = 0; // allow immediate re-trigger
@@ -4309,13 +4641,96 @@
 
             document.getElementById('audio-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
+                dismissMobileAudioHint();
                 toggleAudio();
             });
 
+            // Mobile Full-Village Panorama vs Immersive Zoom Toggle
+            let mobileFitMode = false;
+            let userPanOffset = 0;
+            let userPanVelocity = 0;
+            let isDraggingCamera = false;
+            let lastPanTime = 0;
+            let pointerStartX = 0;
+            let pointerStartY = 0;
+            let pointerStartTime = 0;
+            let pointerLastX = 0;
+
+            const viewModeBtn = document.getElementById('view-mode-btn');
+            const viewModeIcon = document.getElementById('view-mode-icon');
+            const viewModeLabel = document.getElementById('view-mode-label');
+
+            if (viewModeBtn) {
+                viewModeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    mobileFitMode = !mobileFitMode;
+                    if (mobileFitMode) {
+                        if (viewModeIcon) viewModeIcon.textContent = '🔍';
+                        if (viewModeLabel) viewModeLabel.textContent = 'Zoom';
+                        viewModeBtn.title = "Switch to Immersive Zoom & Pan";
+                    } else {
+                        if (viewModeIcon) viewModeIcon.textContent = '🖼️';
+                        if (viewModeLabel) viewModeLabel.textContent = 'Full';
+                        viewModeBtn.title = "Switch to Full Village Panorama";
+                    }
+                });
+            }
+
+            function getStoryFocusX(t) {
+                if (t < 15) return lerp(880, 960, t / 15);
+                if (t < 35) return lerp(420, 780, (t - 15) / 20);
+                if (t < 55) return lerp(980, 1180, (t - 35) / 20);
+                if (t < 75) return 1080;
+                return lerp(1040, 880, (t - 75) / 15);
+            }
+
+            // Mobile Quick Landmark Explorer Chips
+            document.querySelectorAll('.landmark-chip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dismissMobileAudioHint();
+                    const targetX = parseFloat(chip.dataset.x);
+                    const aspect = viewW / viewH;
+                    const worldAspect = WORLD_W / WORLD_H;
+                    if (aspect < worldAspect) {
+                        if (mobileFitMode) {
+                            mobileFitMode = false;
+                            if (viewModeIcon) viewModeIcon.textContent = '🖼️';
+                            if (viewModeLabel) viewModeLabel.textContent = 'Full';
+                        }
+                        const curStoryFocus = getStoryFocusX(filmTime);
+                        userPanOffset = targetX - curStoryFocus;
+                        userPanVelocity = 0;
+                        lastPanTime = performance.now();
+                    }
+                    chip.style.borderColor = 'rgba(226, 169, 82, 0.7)';
+                    setTimeout(() => { chip.style.borderColor = ''; }, 1500);
+                });
+            });
+
+            // Dismissible Mobile Tip
+            const closeTipBtn = document.getElementById('close-tip-btn');
+            const mobileTipEl = document.getElementById('mobile-tip');
+            if (closeTipBtn && mobileTipEl) {
+                closeTipBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    mobileTipEl.style.opacity = '0';
+                    setTimeout(() => { try { mobileTipEl.remove(); } catch (_) { } }, 400);
+                });
+                setTimeout(() => {
+                    if (mobileTipEl) {
+                        mobileTipEl.style.opacity = '0';
+                        setTimeout(() => { try { mobileTipEl.remove(); } catch (_) { } }, 400);
+                    }
+                }, 7000);
+            }
+
             // Interactive Canvas Click / Tap Sound Hotspots (convert screen tap to 1600x900 world coordinates)
             let currentCamTransform = { offsetX: 0, offsetY: 0, scale: 1 };
-            canvas.addEventListener('pointerdown', (e) => {
+
+            function handleVillageTap(clientX, clientY) {
                 ensureAudioUnlocked();
+                dismissMobileAudioHint();
                 if (isMuted) {
                     isMuted = false;
                     if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(0.90, audioCtx.currentTime, 0.12);
@@ -4324,11 +4739,16 @@
                 if (!audioCtx) return;
 
                 const rect = canvas.getBoundingClientRect();
-                const sx = e.clientX - rect.left;
-                const sy = e.clientY - rect.top;
+                const sx = clientX - rect.left;
+                const sy = clientY - rect.top;
                 const wx = (sx - currentCamTransform.offsetX) / currentCamTransform.scale;
                 const wy = (sy - currentCamTransform.offsetY) / currentCamTransform.scale;
                 const now = audioCtx.currentTime;
+
+                // Subtle mobile haptic feedback
+                if (navigator.vibrate) {
+                    try { navigator.vibrate(10); } catch (_) { }
+                }
 
                 // Check which village element the user tapped!
                 if (wy < 425 && wx > 340 && wx < 620) {
@@ -4367,6 +4787,63 @@
                     triggerBirdCall(now, wy < 320);
                     spawnSoundRipple(wx, wy, wy < 320 ? '🐦 কোকিলের ডাক · Cuckoo Call' : '🐦 দোয়েলের শিস · Doel Whistle');
                 }
+            }
+
+            canvas.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0 && e.pointerType === 'mouse') return;
+                ensureAudioUnlocked();
+                dismissMobileAudioHint();
+
+                pointerStartX = e.clientX;
+                pointerStartY = e.clientY;
+                pointerLastX = e.clientX;
+                pointerStartTime = performance.now();
+                isDraggingCamera = false;
+                userPanVelocity = 0;
+
+                canvas.setPointerCapture(e.pointerId);
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!canvas.hasPointerCapture(e.pointerId)) return;
+                const dx = e.clientX - pointerStartX;
+                const dy = e.clientY - pointerStartY;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > 7) {
+                    isDraggingCamera = true;
+                    const deltaX = e.clientX - pointerLastX;
+                    pointerLastX = e.clientX;
+
+                    const aspect = viewW / viewH;
+                    const worldAspect = WORLD_W / WORLD_H;
+                    if (aspect < worldAspect && !mobileFitMode) {
+                        const worldDeltaX = -deltaX / currentCamTransform.scale;
+                        userPanOffset += worldDeltaX;
+                        userPanVelocity = -deltaX * 0.08;
+                        lastPanTime = performance.now();
+                    }
+                }
+            });
+
+            canvas.addEventListener('pointerup', (e) => {
+                if (canvas.hasPointerCapture(e.pointerId)) {
+                    try { canvas.releasePointerCapture(e.pointerId); } catch (_) { }
+                }
+                const elapsed = performance.now() - pointerStartTime;
+                const dist = Math.hypot(e.clientX - pointerStartX, e.clientY - pointerStartY);
+
+                if (!isDraggingCamera && dist < 10 && elapsed < 450) {
+                    handleVillageTap(e.clientX, e.clientY);
+                }
+                isDraggingCamera = false;
+            });
+
+            canvas.addEventListener('pointercancel', (e) => {
+                if (canvas.hasPointerCapture(e.pointerId)) {
+                    try { canvas.releasePointerCapture(e.pointerId); } catch (_) { }
+                }
+                isDraggingCamera = false;
             });
 
             // ============================================================================
@@ -4514,7 +4991,7 @@
                 const aspect = viewW / viewH;
                 const worldAspect = WORLD_W / WORLD_H;
 
-                let scale, camCenterX, camCenterY;
+                let scale, camCenterX, camCenterY, offsetX, offsetY, drawW, drawH;
                 if (aspect >= worldAspect) {
                     scale = Math.max(viewW / WORLD_W, viewH / WORLD_H) * (reducedMotion ? 1.0 : 1.035);
                     const halfVisW = (viewW / scale) * 0.5;
@@ -4522,25 +4999,66 @@
                     const targetX = WORLD_W * 0.5 + (reducedMotion ? 0 : Math.sin(state.t * 0.14) * 18);
                     camCenterX = clamp(targetX, halfVisW, WORLD_W - halfVisW);
                     camCenterY = clamp(WORLD_H * 0.5, halfVisH, WORLD_H - halfVisH);
+
+                    drawW = WORLD_W * scale;
+                    drawH = WORLD_H * scale;
+                    offsetX = viewW * 0.5 - camCenterX * scale;
+                    offsetY = viewH * 0.5 - camCenterY * scale;
+                } else if (mobileFitMode) {
+                    // Full Village Panorama Fit Mode for Mobile Portrait
+                    scale = viewW / WORLD_W;
+                    drawW = WORLD_W * scale;
+                    drawH = WORLD_H * scale;
+                    offsetX = 0;
+                    offsetY = (viewH - drawH) * 0.5;
+                    camCenterX = WORLD_W * 0.5;
+                    camCenterY = WORLD_H * 0.5;
+
+                    // Clear canvas background and draw atmospheric letterbox gradient
+                    ctx.clearRect(0, 0, viewW, viewH);
+                    try {
+                        const bgGrad = ctx.createLinearGradient(0, 0, 0, viewH);
+                        const p = state.pal || PALETTES.dawn;
+                        const uTop = clamp((offsetY - 10) / viewH, 0.05, 0.48);
+                        const uBot = clamp((offsetY + drawH + 10) / viewH, 0.52, 0.95);
+                        bgGrad.addColorStop(0, `rgb(${p.skyTop.join(',')})`);
+                        bgGrad.addColorStop(uTop, `rgb(${p.skyHor.join(',')})`);
+                        bgGrad.addColorStop(uBot, `rgb(${p.waterTop.join(',')})`);
+                        bgGrad.addColorStop(1, `rgb(${p.waterBot.join(',')})`);
+                        ctx.fillStyle = bgGrad;
+                        ctx.fillRect(0, 0, viewW, viewH);
+                    } catch (_) {
+                        ctx.fillStyle = '#0d0c0a';
+                        ctx.fillRect(0, 0, viewW, viewH);
+                    }
                 } else {
+                    // Immersive Portrait Zoom with smooth Story Following & User Pan Dragging
                     scale = (viewH / WORLD_H) * 1.02;
-                    let focusX = 980;
-                    if (state.t < 15) focusX = lerp(880, 960, state.t / 15);
-                    else if (state.t < 35) focusX = lerp(420, 780, (state.t - 15) / 20);
-                    else if (state.t < 55) focusX = lerp(980, 1180, (state.t - 35) / 20);
-                    else if (state.t < 75) focusX = 1080;
-                    else focusX = lerp(1040, 880, (state.t - 75) / 15);
+                    const storyFocusX = getStoryFocusX(state.t);
+
+                    // Apply inertia / auto-return when user is not actively dragging
+                    if (!isDraggingCamera) {
+                        if (Math.abs(userPanVelocity) > 0.05) {
+                            userPanOffset += userPanVelocity * dt * 60;
+                            userPanVelocity *= Math.pow(0.85, dt * 60);
+                        }
+                        const timeSincePan = (performance.now() - lastPanTime) / 1000;
+                        if (timeSincePan > 4.5 && Math.abs(userPanOffset) > 0.5) {
+                            userPanOffset = lerp(userPanOffset, 0, dt * 1.2);
+                        }
+                    }
 
                     const halfVisW = (viewW / scale) * 0.5;
                     const halfVisH = (viewH / scale) * 0.5;
-                    camCenterX = clamp(focusX, halfVisW, WORLD_W - halfVisW);
+                    const desiredFocusX = storyFocusX + userPanOffset;
+                    camCenterX = clamp(desiredFocusX, halfVisW, WORLD_W - halfVisW);
                     camCenterY = clamp(WORLD_H * 0.51, halfVisH, WORLD_H - halfVisH);
-                }
 
-                const drawW = WORLD_W * scale;
-                const drawH = WORLD_H * scale;
-                const offsetX = viewW * 0.5 - camCenterX * scale;
-                const offsetY = viewH * 0.5 - camCenterY * scale;
+                    drawW = WORLD_W * scale;
+                    drawH = WORLD_H * scale;
+                    offsetX = viewW * 0.5 - camCenterX * scale;
+                    offsetY = viewH * 0.5 - camCenterY * scale;
+                }
 
                 currentCamTransform = { offsetX, offsetY, scale };
                 ctx.drawImage(sceneCanvas, offsetX, offsetY, drawW, drawH);
