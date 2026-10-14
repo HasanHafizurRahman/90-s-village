@@ -3592,6 +3592,17 @@
             let azanActiveUntil = 0;
             let lastAutoAzanWindow = -1;
 
+            // Distant Morning Azan MP3 Track (strictly play first 18.5s only)
+            const AZAN_AUDIO_URL = 'morning-azan-by-freesound-community-royalty-free-music-55652.mp3';
+            const AZAN_MAX_DURATION = 18.5; // strictly play first 18.5 seconds (opening Allahu Akbar call)
+            const AZAN_FADE_START = 14.8;   // begin soft natural fade-out into morning nature at 15.8s
+            let azanAudioBuffer = null;
+            let azanBufferLoading = false;
+            let currentAzanSource = null;
+            let currentAzanGain = null;
+            let fallbackAzanAudio = null;
+            let fallbackAzanFadeInterval = null;
+
             // Visual feedback ripples when user taps interactive objects or when Azan floats from mosque
             const soundRipples = [];
             let tubewellPumpAnim = 0;
@@ -3637,6 +3648,8 @@
                 reverbSend.gain.value = 0.55;
                 reverbSend.connect(openAirReverb);
                 openAirReverb.connect(masterGain);
+
+                loadAzanAudioBuffer();
 
                 // 4-second organic pink/brown noise buffer
                 const bufLen = audioCtx.sampleRate * 4;
@@ -3727,162 +3740,166 @@
             }
 
             // --------------------------------------------------------------------------
-            // UNAMPLIFIED HUMAN-VOICE AZAN SYNTHESIZER (No Microphone / No Horn PA)
-            // Uses Glottal Harmonic Series + 3 Parallel Vowel Formant Filters (F1,F2,F3)
-            // + Natural Vibrato + Open-Air Distance Filtering & Field Reverb
+            // AUTHENTIC MORNING AZAN PLAYER (Strictly first 15–20s: 18.5s with soft fade)
+            // Audio Asset: morning-azan-by-freesound-community-royalty-free-music-55652.mp3
+            // Incorporates Open-Air Distance Filtering, Mosque Stereo Panning & Field Reverb
             // --------------------------------------------------------------------------
-            function triggerUnamplifiedAzan(startOffset = 0) {
-                if (!audioCtx || isMuted) return;
-                const now = audioCtx.currentTime + startOffset;
-                if (now < azanActiveUntil - 1.0) return; // already calling Azan
+            function loadAzanAudioBuffer() {
+                if (azanAudioBuffer || azanBufferLoading || !window.fetch) return;
+                azanBufferLoading = true;
+                fetch(AZAN_AUDIO_URL)
+                    .then(r => {
+                        if (!r.ok) throw new Error('HTTP ' + r.status);
+                        return r.arrayBuffer();
+                    })
+                    .then(buf => {
+                        if (!audioCtx) {
+                            const AC = window.AudioContext || window.webkitAudioContext;
+                            if (AC) audioCtx = new AC();
+                        }
+                        if (audioCtx) {
+                            return audioCtx.decodeAudioData(buf);
+                        }
+                        throw new Error('AudioContext not ready');
+                    })
+                    .then(decoded => {
+                        azanAudioBuffer = decoded;
+                        azanBufferLoading = false;
+                    })
+                    .catch(() => {
+                        azanBufferLoading = false;
+                    });
+            }
 
-                // Create a rich periodic glottal vocal wave (warm human vocal cords, no harsh clipping)
-                const real = new Float32Array(24);
-                const imag = new Float32Array(24);
-                for (let k = 1; k < 24; k++) {
-                    // Natural human glottal roll-off (-12dB/octave) so voice is warm and chesty
-                    imag[k] = 1.0 / Math.pow(k, 1.38);
+            function stopCurrentAzan() {
+                if (currentAzanSource) {
+                    try {
+                        if (currentAzanGain && audioCtx) {
+                            const ct = audioCtx.currentTime;
+                            currentAzanGain.gain.setValueAtTime(currentAzanGain.gain.value, ct);
+                            currentAzanGain.gain.linearRampToValueAtTime(0.0001, ct + 0.08);
+                        }
+                        currentAzanSource.stop(audioCtx ? audioCtx.currentTime + 0.1 : 0);
+                    } catch (e) { }
+                    currentAzanSource = null;
                 }
-                const vocalWave = audioCtx.createPeriodicWave(real, imag);
+                if (fallbackAzanAudio) {
+                    try {
+                        fallbackAzanAudio.pause();
+                        fallbackAzanAudio.currentTime = 0;
+                    } catch (e) { }
+                }
+                if (fallbackAzanFadeInterval) {
+                    clearInterval(fallbackAzanFadeInterval);
+                    fallbackAzanFadeInterval = null;
+                }
+            }
 
-                // Vowel Formant Table [F1, F2, F3] for natural Arabic vocal articulation
-                const VOWELS = {
-                    A: [730, 1190, 2440], // open warm "Allā..."
-                    O: [540, 920, 2350],  // deep rounded "Allāhu..."
-                    U: [350, 780, 2250],  // "-hu"
-                    E: [490, 1720, 2420], // "Ash-ha-du..."
-                    I: [320, 2120, 2700], // "-i-lā-ha / il-lā..."
-                    M: [280, 900, 2150]   // soft nasal/liquid closure "l / m / n"
-                };
+            function triggerUnamplifiedAzan(startOffset = 0) {
+                if (isMuted) return;
+                ensureAudioUnlocked();
 
-                // Authentic, slow, contemplative Bengali village Maqam phrasing (root D3 = 146.83 Hz, Hijaz/Bhairav inflection):
-                // D3=146.8, Eb3=155.6, F#3=185.0, G3=196.0, A3=220.0, Bb3=233.1, C4=261.6
-                // Phrase 1 (0.0 - 6.8s): "Allāhu Akbar, Allāhu Akbar" (slow, rising, unhurried breath)
-                // Phrase 2 (7.6 - 15.2s): "Ash-hadu an lā ilāha illāllāh" (soulful melismatic descent across the fields)
-                const phrases = [
-                    {
-                        t0: 0.0, dur: 6.6,
-                        notes: [
-                            { t: 0.0, f: 196.0, v: 'A' }, // Al-
-                            { t: 0.5, f: 220.0, v: 'O' }, // lā-
-                            { t: 2.1, f: 233.1, v: 'O' }, // (melisma rise)
-                            { t: 2.8, f: 220.0, v: 'U' }, // -hu
-                            { t: 3.3, f: 196.0, v: 'A' }, // Ak-
-                            { t: 3.9, f: 220.0, v: 'A' }, // -ba-
-                            { t: 4.5, f: 185.0, v: 'O' }, // -a-
-                            { t: 5.3, f: 196.0, v: 'A' }, // -ar...
-                            { t: 6.4, f: 185.0, v: 'M' }
-                        ]
-                    },
-                    {
-                        t0: 7.4, dur: 7.4,
-                        notes: [
-                            { t: 0.0, f: 185.0, v: 'E' }, // Ash-ha-
-                            { t: 0.9, f: 220.0, v: 'U' }, // -du
-                            { t: 1.5, f: 233.1, v: 'A' }, // an lā
-                            { t: 2.6, f: 261.6, v: 'I' }, // i-
-                            { t: 3.2, f: 233.1, v: 'A' }, // -lā-ha
-                            { t: 4.4, f: 220.0, v: 'I' }, // il-
-                            { t: 5.0, f: 196.0, v: 'O' }, // -lāl-
-                            { t: 5.8, f: 185.0, v: 'A' }, // -lā-
-                            { t: 6.5, f: 146.8, v: 'A' }, // -āh... (gentle rest on tonic D3)
-                            { t: 7.2, f: 146.8, v: 'M' }
-                        ]
-                    }
-                ];
+                const now = audioCtx ? audioCtx.currentTime + startOffset : 0;
+                // Avoid rapid re-triggering within 2s of an active Azan call
+                if (audioCtx && now < azanActiveUntil - (AZAN_MAX_DURATION - 2.0)) return;
 
-                azanActiveUntil = now + 15.2;
+                stopCurrentAzan();
+
+                azanActiveUntil = (audioCtx ? audioCtx.currentTime : 0) + AZAN_MAX_DURATION;
+
+                // Update Top Bar HUD Button Badge
                 const azanBtn = document.getElementById('azan-label');
                 if (azanBtn) {
                     azanBtn.textContent = 'Azan Calling...';
                     setTimeout(() => {
                         if (azanBtn) azanBtn.textContent = 'Distant Azan';
-                    }, 15000);
+                    }, AZAN_MAX_DURATION * 1000);
                 }
 
-                for (const ph of phrases) {
-                    const pStart = now + ph.t0;
-                    const pEnd = pStart + ph.dur;
+                // Primary Path: High-Fidelity Web Audio API Buffer (with distance low-pass, panning & open-air reverb)
+                if (audioCtx && azanAudioBuffer) {
+                    try {
+                        const src = audioCtx.createBufferSource();
+                        src.buffer = azanAudioBuffer;
 
-                    const osc = audioCtx.createOscillator();
-                    osc.setPeriodicWave(vocalWave);
+                        const azanGain = audioCtx.createGain();
+                        const t0 = audioCtx.currentTime + startOffset;
+                        const targetGain = 0.72;
 
-                    // Natural human vocal vibrato (~5.1 Hz, gentle +-2.2 Hz depth)
-                    const vib = audioCtx.createOscillator();
-                    const vibGain = audioCtx.createGain();
-                    vib.frequency.value = 5.1;
-                    vibGain.gain.setValueAtTime(0.4, pStart);
-                    vibGain.gain.linearRampToValueAtTime(2.3, pStart + 1.4);
-                    vib.connect(vibGain).connect(osc.frequency);
+                        // Soft vocal onset, full opening call, gentle exponential fade-out over last 2.7s
+                        azanGain.gain.setValueAtTime(0.0001, t0);
+                        azanGain.gain.linearRampToValueAtTime(targetGain, t0 + 0.8);
+                        azanGain.gain.setValueAtTime(targetGain, t0 + AZAN_FADE_START);
+                        azanGain.gain.exponentialRampToValueAtTime(0.0001, t0 + AZAN_MAX_DURATION);
 
-                    // 3 Parallel Formant Bandpass Filters (F1, F2, F3) for authentic human vowel throat resonance
-                    const f1 = audioCtx.createBiquadFilter();
-                    const f2 = audioCtx.createBiquadFilter();
-                    const f3 = audioCtx.createBiquadFilter();
-                    [f1, f2, f3].forEach((f, idx) => {
-                        f.type = 'bandpass';
-                        f.Q.value = idx === 0 ? 5.5 : idx === 1 ? 7.0 : 8.5;
-                    });
-                    const f1Gain = audioCtx.createGain(); f1Gain.gain.value = 1.0;
-                    const f2Gain = audioCtx.createGain(); f2Gain.gain.value = 0.52;
-                    const f3Gain = audioCtx.createGain(); f3Gain.gain.value = 0.22;
+                        // Distant open-air low-pass filter (2400 Hz absorbs high sizzle across morning river mist)
+                        const airFilter = audioCtx.createBiquadFilter();
+                        airFilter.type = 'lowpass';
+                        airFilter.frequency.value = 2400;
 
-                    // Schedule smooth pitch portamento & vowel formant morphing
-                    for (let i = 0; i < ph.notes.length; i++) {
-                        const n = ph.notes[i];
-                        const nt = pStart + n.t;
-                        const vw = VOWELS[n.v] || VOWELS.A;
-                        if (i === 0) {
-                            osc.frequency.setValueAtTime(n.f, nt);
-                            f1.frequency.setValueAtTime(vw[0], nt);
-                            f2.frequency.setValueAtTime(vw[1], nt);
-                            f3.frequency.setValueAtTime(vw[2], nt);
+                        // Stereo panner (distant lime-washed mosque is across river to the left: -0.26)
+                        const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+                        if (panner) panner.pan.value = -0.26;
+
+                        src.connect(azanGain).connect(airFilter);
+
+                        if (panner) {
+                            airFilter.connect(panner);
+                            const directGain = audioCtx.createGain();
+                            directGain.gain.value = 0.52;
+                            panner.connect(directGain).connect(masterGain);
+                            panner.connect(reverbSend);
                         } else {
-                            // Smooth human vocal glide
-                            osc.frequency.exponentialRampToValueAtTime(n.f, nt);
-                            f1.frequency.exponentialRampToValueAtTime(vw[0], nt);
-                            f2.frequency.exponentialRampToValueAtTime(vw[1], nt);
-                            f3.frequency.exponentialRampToValueAtTime(vw[2], nt);
+                            airFilter.connect(masterGain);
+                            airFilter.connect(reverbSend);
                         }
+
+                        // Strictly play the first 18.5 seconds (never play the rest of the soundtrack)
+                        src.start(t0, 0, AZAN_MAX_DURATION);
+                        src.stop(t0 + AZAN_MAX_DURATION + 0.05);
+
+                        currentAzanSource = src;
+                        currentAzanGain = azanGain;
+                        src.onended = () => {
+                            if (currentAzanSource === src) currentAzanSource = null;
+                        };
+                        return;
+                    } catch (e) {
+                        console.warn('Web Audio Azan buffer playback error:', e);
                     }
+                }
 
-                    // Open-air distance low-pass filter (250m across misty fields absorbs harsh highs > 1750 Hz)
-                    const airFilter = audioCtx.createBiquadFilter();
-                    airFilter.type = 'lowpass';
-                    airFilter.frequency.value = 1720;
+                // Fallback Path: HTML5 Audio Element (Works 100% on file:// protocol or before buffer decodes)
+                if (!fallbackAzanAudio) {
+                    fallbackAzanAudio = new Audio(AZAN_AUDIO_URL);
+                    fallbackAzanAudio.preload = 'auto';
+                }
+                try {
+                    fallbackAzanAudio.currentTime = 0;
+                    fallbackAzanAudio.volume = isMuted ? 0 : 0.62;
+                    const p = fallbackAzanAudio.play();
+                    if (p) p.catch(() => { });
 
-                    // Subtle stereo panning (slightly left-of-center where the distant mosque sits across the river)
-                    const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
-                    if (panner) panner.pan.value = -0.28;
-
-                    // Smooth human breath envelope (soft attack, expressive swell, gentle decay into open air)
-                    const env = audioCtx.createGain();
-                    env.gain.setValueAtTime(0.0001, pStart);
-                    env.gain.linearRampToValueAtTime(0.095, pStart + 0.85);
-                    env.gain.setValueAtTime(0.105, pEnd - 1.3);
-                    env.gain.exponentialRampToValueAtTime(0.0001, pEnd);
-
-                    osc.connect(f1); f1.connect(f1Gain); f1Gain.connect(airFilter);
-                    osc.connect(f2); f2.connect(f2Gain); f2Gain.connect(airFilter);
-                    osc.connect(f3); f3.connect(f3Gain); f3Gain.connect(airFilter);
-
-                    if (panner) {
-                        airFilter.connect(env).connect(panner);
-                        // 35% direct distant voice + 65% open-field acoustic reflection!
-                        const directGain = audioCtx.createGain();
-                        directGain.gain.value = 0.42;
-                        panner.connect(directGain).connect(masterGain);
-                        panner.connect(reverbSend);
-                    } else {
-                        airFilter.connect(env);
-                        env.connect(masterGain);
-                        env.connect(reverbSend);
-                    }
-
-                    osc.start(pStart);
-                    vib.start(pStart);
-                    osc.stop(pEnd + 0.05);
-                    vib.stop(pEnd + 0.05);
+                    if (fallbackAzanFadeInterval) clearInterval(fallbackAzanFadeInterval);
+                    const playStart = Date.now();
+                    fallbackAzanFadeInterval = setInterval(() => {
+                        if (!fallbackAzanAudio) {
+                            clearInterval(fallbackAzanFadeInterval);
+                            return;
+                        }
+                        const elapsed = (Date.now() - playStart) / 1000;
+                        if (elapsed >= AZAN_MAX_DURATION || isMuted) {
+                            fallbackAzanAudio.pause();
+                            fallbackAzanAudio.currentTime = 0;
+                            clearInterval(fallbackAzanFadeInterval);
+                            fallbackAzanFadeInterval = null;
+                        } else if (elapsed >= AZAN_FADE_START) {
+                            const ratio = Math.max(0, (AZAN_MAX_DURATION - elapsed) / (AZAN_MAX_DURATION - AZAN_FADE_START));
+                            fallbackAzanAudio.volume = Math.max(0, (isMuted ? 0 : 0.62) * ratio);
+                        }
+                    }, 50);
+                } catch (e) {
+                    console.warn('Fallback HTML5 Audio playback error:', e);
                 }
             }
 
@@ -4221,6 +4238,13 @@
                 isMuted = !isMuted;
                 const now = audioCtx.currentTime;
                 masterGain.gain.setTargetAtTime(isMuted ? 0.0001 : 0.90, now, 0.15);
+                if (fallbackAzanAudio) {
+                    if (isMuted) fallbackAzanAudio.volume = 0;
+                    else if (now < azanActiveUntil) fallbackAzanAudio.volume = 0.62;
+                }
+                if (isMuted) {
+                    stopCurrentAzan();
+                }
                 if (!isMuted && audioCtx.state === 'suspended') {
                     audioCtx.resume().catch(() => { });
                 }
@@ -4230,6 +4254,9 @@
             function suspendAudioOnHide() {
                 if (audioCtx && audioCtx.state === 'running') {
                     audioCtx.suspend();
+                }
+                if (fallbackAzanAudio && !fallbackAzanAudio.paused) {
+                    fallbackAzanAudio.pause();
                 }
             }
             function resumeAudioOnShow() {
@@ -4241,11 +4268,14 @@
             // Auto-initialize audio immediately on load & unlock seamlessly on any first gesture
             window.addEventListener('DOMContentLoaded', () => {
                 initAudioEngine();
+                loadAzanAudioBuffer();
                 updateAudioButtonUI();
                 if (audioCtx && audioCtx.state === 'running') {
                     triggerUnamplifiedAzan(0.4);
                 }
             });
+            // Pre-load Azan audio buffer immediately
+            loadAzanAudioBuffer();
             ['pointerdown', 'pointermove', 'touchstart', 'keydown'].forEach(evt => {
                 window.addEventListener(evt, () => {
                     if (!audioCtx) {
@@ -4269,6 +4299,7 @@
                     isMuted = false;
                     ensureAudioUnlocked();
                     updateAudioButtonUI();
+                    stopCurrentAzan();
                     azanActiveUntil = 0; // allow immediate re-trigger
                     triggerUnamplifiedAzan(0.05);
                     spawnSoundRipple(468, 388, '🕌 নির্মল আজান · Unamplified Village Azan');
@@ -4301,6 +4332,7 @@
                 // Check which village element the user tapped!
                 if (wy < 425 && wx > 340 && wx < 620) {
                     // Tapped the distant mosque / horizon
+                    stopCurrentAzan();
                     azanActiveUntil = 0;
                     triggerUnamplifiedAzan(0.02);
                     spawnSoundRipple(468, 388, '🕌 মসজিদের আজান · Distant Azan');
